@@ -1,6 +1,6 @@
 services:  
-  mariadb2:
-    container_name: mariadb2
+  mariadb:
+    container_name: mariadb
     image: mariadb:12.1.2
     restart: always
     command: 
@@ -20,7 +20,7 @@ services:
 
   spark-master:
     # image: apache/spark:4.1.1-java21-python3
-    image: my-spark:latest
+    image: my-spark:2026.03.23
     container_name: spark-master
     user: root
     environment:
@@ -42,12 +42,12 @@ services:
       - "10001:10001"
     networks:
       - spark-network
-    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
-    # command: start-master.sh
+    # command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
+    command: start-master.sh
 
   spark-worker-1:
     # image: apache/spark:4.1.1-java21-python3
-    image: my-spark:latest
+    image: my-spark:2026.03.23
     container_name: spark-worker-1
     user: root
     environment:
@@ -68,12 +68,12 @@ services:
       - spark-master
     networks:
       - spark-network
-    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
-    # command: start-worker.sh spark://spark-master:7077
+    # command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    command: start-worker.sh spark://spark-master:7077
 
   spark-worker-2:
     # image: apache/spark:4.1.1-java21-python3
-    image: my-spark:latest
+    image: my-spark:2026.03.23
     container_name: spark-worker-2
     user: root
     environment:
@@ -94,8 +94,8 @@ services:
       - spark-master
     networks:
       - spark-network
-    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
-    # command: start-worker.sh spark://spark-master:7077
+    # command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    command: start-worker.sh spark://spark-master:7077
 
 networks:
   spark-network:
