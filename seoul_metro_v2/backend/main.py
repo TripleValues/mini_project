@@ -3,7 +3,7 @@ from pyspark.sql.functions import trim, col
 from fastapi import FastAPI
 from sqlalchemy import create_engine, text
 from settings import settings
-from pages.spark_service import process_large_csv, load_to_db
+from pages.spark_service import process_large_csv, sync_metro_to_db
 from pages.seoul_data import get_seoul_data
 import pandas as pd
 import os
@@ -46,8 +46,14 @@ def startup_event():
   
 @app.on_event("shutdown")
 def shutdown_event():
-  if spark:
-    spark.stop()
+  global spark
+  try:
+    if spark:
+      spark.stop()
+  except Exception as e:
+    print("Spark already stopped or failed:", e)
+  # if spark:
+  #   spark.stop()
 
 def getDataFrame(file_path):
   try:
@@ -134,8 +140,8 @@ def read_root():
 # ==============================
 # 적재 API
 # ==============================
-@app.post("/load", tags=["원본데이터 적재"])
-def load_data():
+@app.post("/sync_metro", tags=["1. 원천데이터 적재"])
+def sync_metro_data():
   global spark  # 전역 변수 spark 세션 참조
 
   if spark is None:
@@ -162,22 +168,6 @@ def load_data():
       # ------------------------------------------------------------
       # conn.execute(text("TRUNCATE TABLE db_metro.seoul_metro"))
 
-      # ------------------------------------------------------------
-      # DB에 적제한 데이터가 잘못 정제된 경우 
-      # 해당 년도의 데이터를 전부 삭제 하는 SQL문
-      # 다른 값을 기준으로 삭제 할려면 year과 where변수 수정
-      # ------------------------------------------------------------
-      # year = 2021
-
-      # if year != 0:
-      #   # 1. 쿼리문에 :year 라고 표시 (플레이스홀더)
-      #   query = text("DELETE FROM db_metro.seoul_metro WHERE YEAR(`날짜`) = :year")
-        
-      #   # 2. execute 시점에 두 번째 인자로 값을 전달
-      #   conn.execute(query, {"year": year})
-        
-      #   # 3. 변경 사항 확정
-      #   conn.commit()
 
       # ------------------------------------------------------------
       # work 폴더에 존재하는 CSV파일 정재 및 적제 시작 부분
@@ -199,7 +189,7 @@ def load_data():
 
             # DB 적재
             # 최종 정제가 완료된 '_clean.csv' 파일을 이용하여 DB에 적재
-            load_to_db(conn, clean_file)
+            sync_metro_to_db(conn, clean_file)
 
             print(f"정제 처리완료: {file}")
           except Exception as e:
@@ -214,8 +204,8 @@ def load_data():
 # ================================================
 # 서울 열린데이터 광장의 메트로 라인 공공 데이터 받아오기
 # ================================================
-@app.post("/seoul_load", tags=["원본데이터 적재"])
-def load_seoul_data():
+@app.post("/sync_line", tags=["1. 원천데이터 적재"])
+def sync_line_data():
   try:
     sata = get_seoul_data()
 
