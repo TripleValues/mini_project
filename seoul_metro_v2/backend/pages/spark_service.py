@@ -181,7 +181,7 @@ def process_large_csv(file_path, spark_instance, chunk_size=10000):
 # ==============================
 # DB 적재
 # ==============================
-def load_to_db(conn, file_path):
+def sync_metro_to_db(conn, file_path):
   file_path = file_path.replace("\\", "/")
   sql = f"""
   LOAD DATA LOCAL INFILE '{file_path}'
