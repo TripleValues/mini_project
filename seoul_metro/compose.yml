@@ -1,4 +1,4 @@
-services:
+services:  
   mariadb:
     container_name: mariadb
     image: mariadb:12.1.2
@@ -45,7 +45,8 @@ services:
     networks:
       - spark-network
     # command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
-    command: start-master.sh
+    command: /opt/spark/spark-4.1.1-bin-hadoop3/sbin/start-master.sh
+    # command: start-master.sh
 
   spark-worker-1:
     # image: apache/spark:4.1.1-java21-python3
