@@ -37,49 +37,52 @@ def create_table():
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@router.post("/data_processing")
+def feat_01_data_processing():
+    query = """
+    INSERT INTO feat_01 (년도, 월, 승차인원합계, 하차인원합계)
+    SELECT
+        YEAR(날짜) AS 년도,
+        MONTH(날짜) AS 월,
 
-@router.post("/monthly-summary")
-def create_monthly_summary():
+        SUM(CASE 
+            WHEN 구분 = '승차' THEN
+                IFNULL(`05~06`,0)+IFNULL(`06~07`,0)+IFNULL(`07~08`,0)+
+                IFNULL(`08~09`,0)+IFNULL(`09~10`,0)+IFNULL(`10~11`,0)+
+                IFNULL(`11~12`,0)+IFNULL(`12~13`,0)+IFNULL(`13~14`,0)+
+                IFNULL(`14~15`,0)+IFNULL(`15~16`,0)+IFNULL(`16~17`,0)+
+                IFNULL(`17~18`,0)+IFNULL(`18~19`,0)+IFNULL(`19~20`,0)+
+                IFNULL(`20~21`,0)+IFNULL(`21~22`,0)+IFNULL(`22~23`,0)+
+                IFNULL(`23~24`,0)+IFNULL(`24~`,0)
+            ELSE 0
+        END),
+
+        SUM(CASE 
+            WHEN 구분 = '하차' THEN
+                IFNULL(`05~06`,0)+IFNULL(`06~07`,0)+IFNULL(`07~08`,0)+
+                IFNULL(`08~09`,0)+IFNULL(`09~10`,0)+IFNULL(`10~11`,0)+
+                IFNULL(`11~12`,0)+IFNULL(`12~13`,0)+IFNULL(`13~14`,0)+
+                IFNULL(`14~15`,0)+IFNULL(`15~16`,0)+IFNULL(`16~17`,0)+
+                IFNULL(`17~18`,0)+IFNULL(`18~19`,0)+IFNULL(`19~20`,0)+
+                IFNULL(`20~21`,0)+IFNULL(`21~22`,0)+IFNULL(`22~23`,0)+
+                IFNULL(`23~24`,0)+IFNULL(`24~`,0)
+            ELSE 0
+        END)
+
+    FROM db_metro.`seoul_metro`
+    GROUP BY YEAR(날짜), MONTH(날짜);
+    """
+
     try:
-        # 1️⃣ DB → Pandas
-        select_sql = """
-            SELECT
-                YEAR(날짜) AS 년도,
-                MONTH(날짜) AS 월,
-                구분,
-                total
-            FROM seoul_metro
-        """
+        with mariadb_engine.begin() as conn:
+            # 🔥 기존 데이터 제거 (중복 방지)
+            conn.execute(text("truncate table feat_01"))
 
-        df = pd.read_sql(select_sql, mariadb_engine)
+            # 🔥 집계 INSERT 실행
+            conn.execute(text(query))
 
-        # 2️⃣ Pandas 가공 (핵심🔥)
-        result_df = df.groupby(["년도", "월", "구분"])["total"].sum().unstack(fill_value=0).reset_index()
-
-        # 컬럼명 정리
-        result_df.columns.name = None
-        result_df = result_df.rename(columns={
-            "승차": "승차인원합계",
-            "하차": "하차인원합계"
-        })
-
-        # 없는 경우 대비
-        if "승차인원합계" not in result_df:
-            result_df["승차인원합계"] = 0
-        if "하차인원합계" not in result_df:
-            result_df["하차인원합계"] = 0
-
-        result_df = result_df[["년도", "월", "승차인원합계", "하차인원합계"]]
-
-        # 3️⃣ DB INSERT (덮어쓰기 or append 선택)
-        result_df.to_sql(
-            name="metro_monthly_summary",
-            con=mariadb_engine,
-            if_exists="append",  # replace / append 선택
-            index=False
-        )
-
-        return {"message": "Pandas 기반 월별 집계 완료"}
+        return {"message": "feat_01 집계 데이터 생성 완료"}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
