@@ -22,7 +22,7 @@ def fetch_data():
 
   # 컬럼명 DB 맞춤 변환
   df = df.rename(columns={
-    'STATION_CD': '코드',
+    'STATION_CD': '역번호',
     'STATION_NM': '역명',
     'LINE_NUM': '호선',
     'FR_CODE': '외부코드'
@@ -31,7 +31,7 @@ def fetch_data():
   # 필요한 컬럼만 (순서 중요)
   df = df[
     [
-      '코드',
+      '역번호',
       '역명',
       '호선',
       '외부코드'
@@ -46,7 +46,7 @@ def fetch_data():
 
 def get_seoul_data():
   df = fetch_data()
-  mariadb_engine = create_engine(settings.mariadb_host)
+  mariadb_engine = create_engine(settings.mariadb_url)
 
   with mariadb_engine.connect() as conn:
     # 기존 데이터 삭제

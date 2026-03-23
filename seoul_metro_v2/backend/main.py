@@ -134,7 +134,7 @@ def read_root():
 # ==============================
 # 적재 API
 # ==============================
-@app.post("/load")
+@app.post("/load", tags=["원본데이터 적재"])
 def load_data():
   global spark  # 전역 변수 spark 세션 참조
 
@@ -214,7 +214,7 @@ def load_data():
 # ================================================
 # 서울 열린데이터 광장의 메트로 라인 공공 데이터 받아오기
 # ================================================
-@app.post("/seoul_load")
+@app.post("/seoul_load", tags=["원본데이터 적재"])
 def load_seoul_data():
   try:
     sata = get_seoul_data()
