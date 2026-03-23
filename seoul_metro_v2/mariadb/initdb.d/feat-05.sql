@@ -188,23 +188,23 @@ FROM `feat_05`;
 -- 2. 계산된 컬럼의 Null값 및 범위 체크
 -- IFNULL 처리를 하셨지만, 결과값인 AM, PM, 총 이용객 수가 음수이거나 비정상적으로 0인 경우가 있는지 확인
 SELECT 
-    MIN(AM) AS min_am, 
-    MAX(AM) AS max_am,
-    MIN(PM) AS min_pm, 
-    MAX(PM) AS max_pm,
-    -- COUNTIF(`총 이용객 수` IS NULL) AS null_total_count,
-    -- COUNTIF(`총 이용객 수` = 0) AS zero_total_count
-		SUM(CASE WHEN `총 이용객 수` IS NULL THEN 1 ELSE 0 END) AS null_total_count,
-    SUM(CASE WHEN `총 이용객 수` = 0 THEN 1 ELSE 0 END) AS zero_total_count
+	MIN(AM) AS min_am, 
+	MAX(AM) AS max_am,
+	MIN(PM) AS min_pm, 
+	MAX(PM) AS max_pm,
+	-- COUNTIF(`총 이용객 수` IS NULL) AS null_total_count,
+	-- COUNTIF(`총 이용객 수` = 0) AS zero_total_count
+	SUM(CASE WHEN `총 이용객 수` IS NULL THEN 1 ELSE 0 END) AS null_total_count,
+	SUM(CASE WHEN `총 이용객 수` = 0 THEN 1 ELSE 0 END) AS zero_total_count
 FROM `feat_05`;
 
 -- 3. 계절 및 분기 매핑 논리 검증
 -- MONTH 함수와 QUARTER 함수가 의도한 대로 매핑되었는지 샘플링하여 확인
 SELECT 
-    DISTINCT EXTRACT(MONTH FROM `날짜`) AS month,
-    `분기`,
-    `계절`,
-    COUNT(*) AS row_count
+	DISTINCT EXTRACT(MONTH FROM `날짜`) AS month,
+	`분기`,
+	`계절`,
+	COUNT(*) AS row_count
 FROM `feat_05`
 GROUP BY 1, 2, 3
 ORDER BY 1;
@@ -214,9 +214,9 @@ ORDER BY 1;
 -- CREATE TABLE 과정에서 데이터가 유실되지는 않았는지 원본 테이블(seoul_metro)과 대조
 
 SELECT 
-    (SELECT COUNT(*) FROM `seoul_metro`) AS raw_count,
-    (SELECT COUNT(*) FROM `feat_05`) AS feature_count,
-    (SELECT COUNT(*) FROM `seoul_metro`) - (SELECT COUNT(*) FROM `feat_05`) AS difference;
+	(SELECT COUNT(*) FROM `seoul_metro`) AS raw_count,
+	(SELECT COUNT(*) FROM `feat_05`) AS feature_count,
+	(SELECT COUNT(*) FROM `seoul_metro`) - (SELECT COUNT(*) FROM `feat_05`) AS difference;
 
 -- 5. 만약 특정 행에서 합계가 맞지 않는다면 아래 쿼리를 통해 어떤 데이터가 문제인지 직접 식별
 
@@ -228,8 +228,8 @@ LIMIT 10;
 -- 2008년 봄 시즌의 날짜/요일/구분별 이용객 합계
 -- A. 조인 누락 확인 (데이터 유실 체크)
 SELECT 
-    SUM(CASE WHEN d.`요일` IS NULL THEN 1 ELSE 0 END) AS missing_day_name,
-    SUM(CASE WHEN ml.`역번호` IS NULL THEN 1 ELSE 0 END) AS missing_line_info
+	SUM(CASE WHEN d.`요일` IS NULL THEN 1 ELSE 0 END) AS missing_day_name,
+	SUM(CASE WHEN ml.`역번호` IS NULL THEN 1 ELSE 0 END) AS missing_line_info
 FROM feat_05 AS sq
 LEFT JOIN `요일` AS d ON sq.`요일` = d.`코드`
 LEFT JOIN metro_line AS ml ON sq.`역번호` = ml.역번호
@@ -238,8 +238,8 @@ WHERE YEAR(`날짜`) = 2008 AND `계절` = '봄';
 -- B. 중복 집계 확인
 -- 원본 feat_05의 총합과 조인 후 총합 비교
 SELECT 
-    (SELECT SUM(`총 이용객 수`) FROM feat_05 WHERE YEAR(`날짜`) = 2008 AND `계절` = '봄') AS original_sum,
-    SUM(sq.`총 이용객 수`) AS joined_sum
+	(SELECT SUM(`총 이용객 수`) FROM feat_05 WHERE YEAR(`날짜`) = 2008 AND `계절` = '봄') AS original_sum,
+	SUM(sq.`총 이용객 수`) AS joined_sum
 FROM feat_05 AS sq
 LEFT JOIN metro_line AS ml ON sq.`역번호` = ml.역번호
 WHERE YEAR(`날짜`) = 2008 AND `계절` = '봄';
