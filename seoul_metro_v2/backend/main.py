@@ -5,6 +5,7 @@ from sqlalchemy import create_engine, text
 from settings import settings
 from pages.spark_service import process_large_csv, sync_metro_to_db
 from pages.seoul_data import get_seoul_data
+import pages.feat_01 
 import pandas as pd
 import os
 import traceback
@@ -213,3 +214,7 @@ def sync_line_data():
 
   except Exception as e:
     return {"status": False, "error": str(e)}
+  
+apis = [ pages.feat_01.router]
+for router in apis:
+  app.include_router(router)
