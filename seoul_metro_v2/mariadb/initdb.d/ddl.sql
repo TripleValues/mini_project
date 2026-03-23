@@ -1,4 +1,5 @@
-USE db_metro
+-- 계정 생성
+USE db_metro;
 
 CREATE USER 'nyj'@'%' IDENTIFIED BY 'nyj';
 CREATE USER 'lhs'@'%' IDENTIFIED BY 'lhs';
@@ -12,8 +13,8 @@ COMMIT;
 
 FLUSH PRIVILEGES;
 
-USE db_metro
-
+-- seoul_metro TABLE 생성
+USE db_metro;
 CREATE TABLE `seoul_metro` (
 	`날짜` DATE NULL DEFAULT NULL,
 	`역번호` VARCHAR(50) NULL DEFAULT NULL COLLATE 'utf8mb4_uca1400_ai_ci',
@@ -166,19 +167,24 @@ ALTER TABLE metro_line ADD PRIMARY KEY (역번호);
 ALTER TABLE metro_line ADD PRIMARY KEY (호선);
 
 
+-- 계절 및 분기 데이터 뷰 테이블 생성
 
--- 계절 데이터 뷰 테이블 생성
-select `seoul_metro`.`날짜` AS `기준일자`,
-  year(`seoul_metro`.`날짜`) AS `년도`,
-  month(`seoul_metro`.`날짜`) AS `월`,
-  case when month(`seoul_metro`.`날짜`) in (3,4,5) then '봄' 
-  when month(`seoul_metro`.`날짜`) in (6,7,8) then '여름' 
-  when month(`seoul_metro`.`날짜`) in (9,10,11) then '가을' 
-  else '겨울' end AS `계절` from `seoul_metro`
+CREATE OR REPLACE TABLE `metro_to_sq` AS
+SELECT
+  `날짜`, `역번호`, `역명`,
+  `05~06`, `06~07`, `07~08`, `08~09`, `09~10`, `10~11`, `11~12`,
+	`12~13`, `13~14`, `14~15`, `15~16`, `16~17`, `17~18`, `18~19`,
+	`19~20`, `20~21`, `21~22`, `22~23`, `23~24`, `24~`,
+	QUARTER(`날짜`) AS `분기`,
+  CONCAT(YEAR(`날짜`), '년 ', QUARTER(`날짜`), '분기') AS `년도분기`,
+  CASE
+    WHEN MONTH(`날짜`) IN (3,4,5) THEN '봄'
+    WHEN MONTH(`날짜`) IN (6,7,8) THEN '여름'
+    WHEN MONTH(`날짜`) IN (9,10,11) THEN '가을'
+    ELSE '겨울'
+  END AS `계절`,
+  `요일`
+FROM `seoul_metro`;
 
--- 분기 데이터 뷰 테이블 생성
-select `seoul_metro`.`날짜` AS `기준일자`,
-year(`seoul_metro`.`날짜`) AS `년도`,
-quarter(`seoul_metro`.`날짜`) AS `분기`,
-concat(year(`seoul_metro`.`날짜`),'년 ',
-quarter(`seoul_metro`.`날짜`),'분기') AS `년도분기` from `seoul_metro`
+-- metro_to_sq
+CREATE INDEX idx_station ON metro_to_sq(역번호);
