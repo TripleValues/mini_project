@@ -1,4 +1,5 @@
-USE db_metro
+-- 계정 생성
+USE db_metro;
 
 CREATE USER 'nyj'@'%' IDENTIFIED BY 'nyj';
 CREATE USER 'lhs'@'%' IDENTIFIED BY 'lhs';
@@ -12,8 +13,8 @@ COMMIT;
 
 FLUSH PRIVILEGES;
 
-USE db_metro
-
+-- seoul_metro TABLE 생성
+USE db_metro;
 CREATE TABLE `seoul_metro` (
 	`날짜` DATE NULL DEFAULT NULL,
 	`역번호` VARCHAR(50) NULL DEFAULT NULL COLLATE 'utf8mb4_uca1400_ai_ci',
@@ -95,10 +96,10 @@ BEGIN
     END
   INTO result
   FROM seoul_metro
-  WHERE `날짜` = a
-    AND `역번호` = b
-    AND `역명` = c
-    AND `구분` = d
+  WHERE `날짜` COLLATE utf8mb4_unicode_ci = a
+    AND `역번호` COLLATE utf8mb4_unicode_ci = b
+    AND `역명` COLLATE utf8mb4_unicode_ci = c
+    AND `구분` COLLATE utf8mb4_unicode_ci = d
   LIMIT 1;
 
   RETURN result;
@@ -119,12 +120,12 @@ select '6' AS `코드`,'일요일' AS `요일`;
 
 -- 서울교통공사 데이터 광장 공공데이터에서 가져오는 호선 데이터용 테이블
 CREATE TABLE `db_metro`.`metro_line` (
-    `코드` VARCHAR(50) NOT NULL,
+    `역번호` VARCHAR(50) NOT NULL,
     `호선` VARCHAR(50) NOT NULL,
     `역명` VARCHAR(200) NULL DEFAULT NULL,
     `외부코드` VARCHAR(50) NULL DEFAULT NULL,
 
-    PRIMARY KEY (`코드`, `호선`)
+    PRIMARY KEY (`역번호`, `호선`)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- 전체 평균
@@ -164,21 +165,3 @@ CREATE INDEX idx_station ON seoul_metro(역번호);
 
 ALTER TABLE metro_line ADD PRIMARY KEY (역번호);
 ALTER TABLE metro_line ADD PRIMARY KEY (호선);
-
-
-
--- 계절 데이터 뷰 테이블 생성
-select `seoul_metro`.`날짜` AS `기준일자`,
-  year(`seoul_metro`.`날짜`) AS `년도`,
-  month(`seoul_metro`.`날짜`) AS `월`,
-  case when month(`seoul_metro`.`날짜`) in (3,4,5) then '봄' 
-  when month(`seoul_metro`.`날짜`) in (6,7,8) then '여름' 
-  when month(`seoul_metro`.`날짜`) in (9,10,11) then '가을' 
-  else '겨울' end AS `계절` from `seoul_metro`
-
--- 분기 데이터 뷰 테이블 생성
-select `seoul_metro`.`날짜` AS `기준일자`,
-year(`seoul_metro`.`날짜`) AS `년도`,
-quarter(`seoul_metro`.`날짜`) AS `분기`,
-concat(year(`seoul_metro`.`날짜`),'년 ',
-quarter(`seoul_metro`.`날짜`),'분기') AS `년도분기` from `seoul_metro`

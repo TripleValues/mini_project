@@ -27,6 +27,11 @@ def fetch_data():
     'LINE_NUM': '호선',
     'FR_CODE': '외부코드'
   })
+  
+  # 역번호가 0012이거나 0001이면 유지하고 0123인 경우에만 0을 제외
+  df['역번호'] = df['역번호'].astype(str).apply(
+    lambda x: x[1:] if len(x) == 4 and x.startswith('0') and x[1] != '0' else x
+  )
 
   # 필요한 컬럼만 (순서 중요)
   df = df[
