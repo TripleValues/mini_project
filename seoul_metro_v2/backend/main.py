@@ -215,7 +215,11 @@ def sync_line_data():
 
   except Exception as e:
     return {"status": False, "error": str(e)}
-  
+
+# ================================================
+# api라우터 for문 돌리기
+# ================================================
+
 apis = [ pages.feat_01.router, pages.feat_02.router]
 for router in apis:
   app.include_router(router)
