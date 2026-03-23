@@ -142,7 +142,7 @@ def read_root():
 # ==============================
 # 적재 API
 # ==============================
-@app.post("/sync_metro")
+@app.post("/sync_metro", tags=["1. 원천데이터 적재"])
 def sync_metro_data():
   global spark  # 전역 변수 spark 세션 참조
 
@@ -206,7 +206,7 @@ def sync_metro_data():
 # ================================================
 # 서울 열린데이터 광장의 메트로 라인 공공 데이터 받아오기
 # ================================================
-@app.post("/sync_line")
+@app.post("/sync_line", tags=["1. 원천데이터 적재"])
 def sync_line_data():
   try:
     sata = get_seoul_data()
