@@ -7,6 +7,7 @@ from pages.spark_service import process_large_csv, sync_metro_to_db
 from pages.seoul_data import get_seoul_data
 import pages.feat_01 
 import pages.feat_02 
+import pages.feat_07 
 import pandas as pd
 import os
 import traceback
@@ -220,6 +221,6 @@ def sync_line_data():
 # api라우터 for문 돌리기
 # ================================================
 
-apis = [ pages.feat_01.router, pages.feat_02.router]
+apis = [ pages.feat_01.router, pages.feat_02.router, pages.feat_07.router]
 for router in apis:
   app.include_router(router)
