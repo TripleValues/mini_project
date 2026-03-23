@@ -8,7 +8,7 @@ mariadb_engine = create_engine(settings.mariadb_url, connect_args={"local_infile
 router = APIRouter(prefix="/Feat_01", tags=["Feat_01"])
 
 
-@router.post("/create-table")
+@router.post("/create_table")
 def create_table():
     create_table_sql = """
     CREATE TABLE IF NOT EXISTS db_metro.feat_01 (
@@ -75,10 +75,10 @@ def feat_01_data_processing():
 
     try:
         with mariadb_engine.begin() as conn:
-            # 🔥 기존 데이터 제거 (중복 방지)
+            # 기존 데이터 제거 (중복 방지)
             conn.execute(text("truncate table feat_01"))
 
-            # 🔥 집계 INSERT 실행
+            # 집계 INSERT 실행
             conn.execute(text(query))
 
         return {"message": "feat_01 집계 데이터 생성 완료"}
