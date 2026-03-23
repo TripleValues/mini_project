@@ -1,7 +1,6 @@
 from sqlalchemy import create_engine, text
 from fastapi import APIRouter, HTTPException
 from settings import settings
-import pandas as pd
 
 
 mariadb_engine = create_engine(settings.mariadb_url, connect_args={"local_infile": 1})
