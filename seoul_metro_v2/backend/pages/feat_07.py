@@ -1,8 +1,12 @@
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import StreamingResponse
-from sqlalchemy import text
+from sqlalchemy import create_engine, text
+from settings import settings
 import pandas as pd
 import io
+
+mariadb_engine = create_engine(settings.mariadb_url, connect_args={"local_infile": 1})
+
 
 router = APIRouter()
 
