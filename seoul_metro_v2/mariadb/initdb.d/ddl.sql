@@ -120,12 +120,12 @@ select '6' AS `코드`,'일요일' AS `요일`;
 
 -- 서울교통공사 데이터 광장 공공데이터에서 가져오는 호선 데이터용 테이블
 CREATE TABLE `db_metro`.`metro_line` (
-    `코드` VARCHAR(50) NOT NULL,
+    `역번호` VARCHAR(50) NOT NULL,
     `호선` VARCHAR(50) NOT NULL,
     `역명` VARCHAR(200) NULL DEFAULT NULL,
     `외부코드` VARCHAR(50) NULL DEFAULT NULL,
 
-    PRIMARY KEY (`코드`, `호선`)
+    PRIMARY KEY (`역번호`, `호선`)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- 전체 평균
