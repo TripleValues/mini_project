@@ -5,7 +5,7 @@ from sqlalchemy import create_engine, text
 from settings import settings
 from pages.spark_service import process_large_csv, sync_metro_to_db
 from pages.seoul_data import get_seoul_data
-from pages.feat_05 import get_seacon_data, df_to_json_safe
+from pages.feat_05 import get_seacon_data, get_month_data, get_gr_data
 
 import pages.feat_01 
 import pages.feat_02 
@@ -233,7 +233,7 @@ for router in apis:
   
 
 # ================================================
-# feat-05 계절 데이터 가져오기
+# feat-05 특정연도의 계절 데이터 가져오기
 # ================================================
 
 @app.post("/season_metro", tags=["Feat_05"])
@@ -247,7 +247,6 @@ def get_season_metro_data():
     }
   
   years = 2008
-  season = "봄"
 
   try:
     # 데이터 가져와서 return값으로 보내주기 위해 스타트하는 시간
@@ -256,7 +255,99 @@ def get_season_metro_data():
     logger.info("[DB DATA 조회 시작]")
 
     # 실제 실행 (Spark Action)
-    df = get_seacon_data(spark, years, season).cache()
+    df = get_seacon_data(spark, years).cache()
+    # 가져온 데이터를 return값으로 보내주기 위해 스타트하는 시간
+    st_tl = time.time()
+    result = df.toJSON().collect()
+    # result = df.toPandas().to_dict(orient="records")
+    # 데이터 가져오는 시간 체크
+    get_data_time(st_fl, st_tl, result)
+    
+    logger.info("[DB DATA 조회 완료]")
+
+    return { "status": True, "data": result }
+
+  # Spark / JDBC / DB 에러
+  except Exception as e:
+    error_msg = str(e)
+
+    logger.error("ERROR 발생")
+    logger.error(error_msg)
+
+    return { "status": False, "error": error_msg }
+  
+
+# ================================================
+# feat-05 특정연도의 월별 데이터 가져오기
+# ================================================
+
+@app.post("/month_metro", tags=["Feat_05"])
+def get_month_metro_data():
+  global spark
+
+  if spark is None:
+    return {
+      "status": False, 
+      "error": "Spark session is not initialized. Please wait for startup."
+    }
+  
+  years = 2008
+
+  try:
+    # 데이터 가져와서 return값으로 보내주기 위해 스타트하는 시간
+    st_fl = time.time()
+
+    logger.info("[DB DATA 조회 시작]")
+
+    # 실제 실행 (Spark Action)
+    df = get_month_data(spark, years).cache()
+    # 가져온 데이터를 return값으로 보내주기 위해 스타트하는 시간
+    st_tl = time.time()
+    result = df.toJSON().collect()
+    # result = df.toPandas().to_dict(orient="records")
+    # 데이터 가져오는 시간 체크
+    get_data_time(st_fl, st_tl, result)
+    
+    logger.info("[DB DATA 조회 완료]")
+
+    return { "status": True, "data": result }
+
+  # Spark / JDBC / DB 에러
+  except Exception as e:
+    error_msg = str(e)
+
+    logger.error("ERROR 발생")
+    logger.error(error_msg)
+
+    return { "status": False, "error": error_msg }
+  
+
+
+# ============================================================
+# feat-05 특정연도와 특정연도의 월별 총 이용객 증감률 데이터 가져오기
+# ============================================================
+
+@app.post("/gr_metro", tags=["Feat_05"])
+def get_gr_data():
+  global spark
+
+  if spark is None:
+    return {
+      "status": False, 
+      "error": "Spark session is not initialized. Please wait for startup."
+    }
+  
+  year1 = 2021
+  year2 = 2017
+
+  try:
+    # 데이터 가져와서 return값으로 보내주기 위해 스타트하는 시간
+    st_fl = time.time()
+
+    logger.info("[DB DATA 조회 시작]")
+
+    # 실제 실행 (Spark Action)
+    df = get_gr_data(spark, year1, year2).cache()
     # 가져온 데이터를 return값으로 보내주기 위해 스타트하는 시간
     st_tl = time.time()
     result = df.toJSON().collect()
