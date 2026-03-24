@@ -55,11 +55,11 @@ def feat_02_spark_processing():
     spark = None
     try:
         spark = SparkSession.builder.getOrCreate()
+        spark.conf.set("spark.sql.ansi.enabled", "false")
        
         # 세션이 잘 살아있는지 확인용 로그
         logger.info(f"Using Spark Session: {spark.sparkContext.appName}")
         
-        spark.conf.set("spark.sql.ansi.enabled", "false")
 
         jdbc_url = settings.jdbc_url
         properties = {
