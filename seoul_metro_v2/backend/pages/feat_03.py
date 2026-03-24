@@ -4,8 +4,11 @@ from settings import settings
 
 router = APIRouter(prefix="/Feat_03", tags=["Feat_03"])
 
+# ===================================================================================
+# 1. 공통 데이터 로드 및 정제 함수
+# ===================================================================================
+
 def get_time_pattern(spark, year: str, station_name: str, day_type: str):
-  # ――――― [ DB 연결 및 데이터 로드 ] ――――――――――――――――――――――――――――――――――――――――――――――――――
   df = spark.read.format("jdbc") \
   .option("url", settings.jdbc_url) \
   .option("driver", "org.mariadb.jdbc.Driver") \
@@ -14,9 +17,9 @@ def get_time_pattern(spark, year: str, station_name: str, day_type: str):
   .option("password", settings.mariadb_password) \
   .load()
 
-  # ===================================================================================
-  # 1. MySQL Connection 방법 - 1
-  # ===================================================================================
+  # -----------------------------------------------------------------------------------
+  # (1) MySQL Connection 방법 - 1
+  # -----------------------------------------------------------------------------------
 
   # ――――― [ 데이터 정제 및 필터링 시도 >>> 실패 ] ――――――――――――――――――――――――――――――――――――――――――――――――――――――
   # - split: '서울역(150)'에서 '('를 기준으로 나누어 앞부분만 취함
@@ -32,7 +35,7 @@ def get_time_pattern(spark, year: str, station_name: str, day_type: str):
   #   (F.col("요일구분").contains(day_type.strip()))
   # )
 
-  # ――――― [ 데이터 정제 및 필터링 시도 >>> 성공 ] ――――――――――――――――――――――――――――――――――――――――――――――――――――――
+  # ――――― [ 데이터 정제 및 필터링 시도 >>> 성공 ] ―――――――――――――――――――――――――――――――――――――――――
   refined_sdf = df.withColumn(
     "정제역명", 
     F.trim(F.substring_index(F.col("역명"), "(", 1 ))
@@ -58,9 +61,10 @@ def get_time_pattern(spark, year: str, station_name: str, day_type: str):
     return[]
   return pdf.to_dict(orient="records")
 
-  # ===================================================================================
-  # 2. MySQL Connection 방법 - 2 >>> return이 빈 배열만 나옴
-  # ===================================================================================
+  # -----------------------------------------------------------------------------------
+  # (2) MySQL Connection 방법 - 2
+  # -----------------------------------------------------------------------------------
+
   # ――――― [ SQL 사용을 위한 임시 뷰 생성 ] ―――――――――――――――――――――――――――――――――――――――――――――――
   # print(f"✅ 전체 로드된 데이터 건수: {df.count()}")
   # df.createOrReplaceTempView("feat_03_view")
@@ -90,21 +94,79 @@ def get_time_pattern(spark, year: str, station_name: str, day_type: str):
 
   # return pdf.to_dict(orient="records")
 
-@router.get("/metro_03", tags=["Feat_03"])
+
+# ===================================================================================
+# 2. API 엔드포인트
+# ===================================================================================
+
+# ――――― [ (1) 승하차 피크 타임 패턴 비교 (다중 선 차트용) ] ―――――――――――――――――――――――――――――――
+@router.get("/metro_03_1", summary="승차 vs 하차 시간대별 패턴 비교")
 async def read_time_pattern(year: str, station_name: str, day_type: str):
   from main import spark
 
-  # ――――― [ Spark 세션 체크 ] ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+  # ――――― [ Spark 세션 체크 ] ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――
   if not spark:
     return {"status" : False, "message": "Spark 세션 초기화 실패"}
   
+  # ――――― [ 'get_time_pattern' 호출 ] ―――――――――――――――――――――――――――――――――――――――――――――――
   try:
-    # ――――― [ 'feat_03.py' 호출 ] ――――――――――――――――――――――――――――――――――――――――――――――――――――――――
-    data = get_time_pattern(spark, year, station_name, day_type)
+    # 함수로부터 List[dict] 데이터 받음
+    raw_data = get_time_pattern(spark, year, station_name, day_type)
+
+    if not raw_data:
+      return {"status": True, "result": []}
+    
+    # 프론트엔드 다중 선 차트 형식으로 가공
+    chart_data = []
+    for g in ["승차", "하차"]:
+      # 해당 구분에 맞는 데이터 필터링 후 data 배열 만들기
+      points = [
+        {"x": f"{int(d['시간대'])}시", "y": d['평균인원']}
+        for d in raw_data if d["구분"] == g
+      ]
+      chart_data.append({
+        "id": g,
+        "station_code": raw_data[0]["역번호"],
+        "data": points
+      })
+      
     return {
       "status" : True,
       "metadata" : {"year": year, "station": station_name, "day_type": day_type},
-      "result": data
+      "result": chart_data
     }
   except Exception as e:
     return {"status": False, "error": str(e)}
+  
+# ――――― [ (2) 골든 타임 정의 (최대 혼잡 시간대 추출) ] ―――――――――――――――――――――――――――――――
+# 해당 역의 하루 중 가장 인원이 많은 시간 TOP 3 정의
+@router.get("/metro_03_2", summary="최대 혼잡 시간대(골든 타임) 추출")
+async def read_golden_time(year: str, station_name: str, day_type: str):
+  from main import spark
+  if not spark:
+    return {"status" : False, "message": "Spark 세션 초기화 실패"}
+  try:
+    raw_data = get_time_pattern(spark, year, station_name, day_type)
+    if not raw_data:
+            return {"status": True, "result": []}
+    
+    # 시간대별로 승차+하차 인원을 합산
+    time_agg = {}
+    for d in raw_data:
+      t = d["시간대"]
+      if t not in time_agg:
+        time_agg[t] = {"시간대": f"{int(t)}시", "total_people": 0, "max_congestion": 0}
+      time_agg[t]["total_people"] += d["평균인원"]
+      # 혼잡도는 해당 시간대의 최대값 유지
+      if d["혼잡도지수"] > time_agg[t]["max_congestion"]:
+          time_agg[t]["max_congestion"] = d["혼잡도지수"]
+
+      # 합산된 데이터를 인원수 기준 내림차순 정렬 후 상위 3개 추출
+    golden_list = sorted(time_agg.values(), key=lambda x: x['total_people'], reverse=True)[:3]
+    
+    return {
+        "status": True, 
+        "result": golden_list
+    }
+  except Exception as e:
+      return {"status": False, "error": str(e)}
