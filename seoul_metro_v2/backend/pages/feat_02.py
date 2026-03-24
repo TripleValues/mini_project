@@ -1,10 +1,15 @@
-from sqlalchemy import create_engine, text
+import logging
 from fastapi import APIRouter, HTTPException
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, expr, row_number, sum as _sum, regexp_replace, to_date
+from pyspark.sql.window import Window
+from sqlalchemy import create_engine, text
 from settings import settings
 
+logger = logging.getLogger(__name__)
 mariadb_engine = create_engine(settings.mariadb_url, connect_args={"local_infile": 1})
 
-router = APIRouter(prefix="/Feat_02", tags=["Feat_02"])
+router = APIRouter(prefix="/feat_02", tags=["feat_02"])
 
 @router.post("/create_table")
 def create_table():
@@ -44,139 +49,107 @@ def create_table():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-
 @router.post("/data_processing")
-def feat_02_data_processing():
-    query = """
-    INSERT INTO feat_02 (날짜, 역명, 시간대, 기준, 인원, 순위)
-
-    -- =========================
-    -- 1 시간대 TOP50
-    -- =========================
-    SELECT *
-    FROM (
-        SELECT
-            DATE(t.날짜) AS 날짜,
-            m.역명,
-        t.시간대,
-        t.구분 AS 기준,
-        SUM(t.인원) AS 인원,
-
-        ROW_NUMBER() OVER (
-            PARTITION BY DATE(t.날짜), t.시간대, t.구분
-            ORDER BY SUM(t.인원) DESC
-        ) AS 순위
-
-    FROM (
-        SELECT 날짜, 역번호, 구분, '05~06' AS 시간대, IFNULL(`05~06`,0) AS 인원 FROM db_metro.seoul_metro
-        UNION ALL
-        SELECT 날짜, 역번호, 구분, '06~07', IFNULL(`06~07`,0) FROM db_metro.seoul_metro
-        UNION ALL
-        SELECT 날짜, 역번호, 구분, '07~08', IFNULL(`07~08`,0) FROM db_metro.seoul_metro
-        UNION ALL
-        SELECT 날짜, 역번호, 구분, '08~09', IFNULL(`08~09`,0) FROM db_metro.seoul_metro
-        UNION ALL
-        SELECT 날짜, 역번호, 구분, '09~10', IFNULL(`09~10`,0) FROM db_metro.seoul_metro
-        UNION ALL
-        SELECT 날짜, 역번호, 구분, '10~11', IFNULL(`10~11`,0) FROM db_metro.seoul_metro
-        UNION ALL
-        SELECT 날짜, 역번호, 구분, '11~12', IFNULL(`11~12`,0) FROM db_metro.seoul_metro
-        UNION ALL
-        SELECT 날짜, 역번호, 구분, '12~13', IFNULL(`12~13`,0) FROM db_metro.seoul_metro
-        UNION ALL
-        SELECT 날짜, 역번호, 구분, '13~14', IFNULL(`13~14`,0) FROM db_metro.seoul_metro
-        UNION ALL
-        SELECT 날짜, 역번호, 구분, '14~15', IFNULL(`14~15`,0) FROM db_metro.seoul_metro
-        UNION ALL
-        SELECT 날짜, 역번호, 구분, '15~16', IFNULL(`15~16`,0) FROM db_metro.seoul_metro
-        UNION ALL
-        SELECT 날짜, 역번호, 구분, '16~17', IFNULL(`16~17`,0) FROM db_metro.seoul_metro
-        UNION ALL
-        SELECT 날짜, 역번호, 구분, '17~18', IFNULL(`17~18`,0) FROM db_metro.seoul_metro
-        UNION ALL
-        SELECT 날짜, 역번호, 구분, '18~19', IFNULL(`18~19`,0) FROM db_metro.seoul_metro
-        UNION ALL
-        SELECT 날짜, 역번호, 구분, '19~20', IFNULL(`19~20`,0) FROM db_metro.seoul_metro
-        UNION ALL
-        SELECT 날짜, 역번호, 구분, '20~21', IFNULL(`20~21`,0) FROM db_metro.seoul_metro
-        UNION ALL
-        SELECT 날짜, 역번호, 구분, '21~22', IFNULL(`21~22`,0) FROM db_metro.seoul_metro
-        UNION ALL
-        SELECT 날짜, 역번호, 구분, '22~23', IFNULL(`22~23`,0) FROM db_metro.seoul_metro
-        UNION ALL
-        SELECT 날짜, 역번호, 구분, '23~24', IFNULL(`23~24`,0) FROM db_metro.seoul_metro
-        UNION ALL
-        SELECT 날짜, 역번호, 구분, '24~', IFNULL(`24~`,0) FROM db_metro.seoul_metro
-    ) t
-
-    INNER JOIN metro_line m
-        ON t.역번호 = m.역번호
-
-        GROUP BY 
-            DATE(t.날짜),
-            m.역명,
-            t.시간대,
-            t.구분
-    ) time_ranked
-    WHERE 순위 <= 50
-
-    UNION ALL
-
-    -- =========================
-    -- 2 일일 TOP50 (시간대 = ALL)
-    -- =========================
-    SELECT *
-    FROM (
-        SELECT
-            DATE(s.날짜) AS 날짜,
-            m.역명,
-        'ALL' AS 시간대,
-        s.구분 AS 기준,
-
-        SUM(
-            IFNULL(`05~06`,0)+IFNULL(`06~07`,0)+IFNULL(`07~08`,0)+
-            IFNULL(`08~09`,0)+IFNULL(`09~10`,0)+IFNULL(`10~11`,0)+
-            IFNULL(`11~12`,0)+IFNULL(`12~13`,0)+IFNULL(`13~14`,0)+
-            IFNULL(`14~15`,0)+IFNULL(`15~16`,0)+IFNULL(`16~17`,0)+
-            IFNULL(`17~18`,0)+IFNULL(`18~19`,0)+IFNULL(`19~20`,0)+
-            IFNULL(`20~21`,0)+IFNULL(`21~22`,0)+IFNULL(`22~23`,0)+
-            IFNULL(`23~24`,0)+IFNULL(`24~`,0)
-        ) AS 인원,
-
-        ROW_NUMBER() OVER (
-            PARTITION BY DATE(s.날짜), s.구분
-            ORDER BY SUM(
-                IFNULL(`05~06`,0)+IFNULL(`06~07`,0)+IFNULL(`07~08`,0)+
-                IFNULL(`08~09`,0)+IFNULL(`09~10`,0)+IFNULL(`10~11`,0)+
-                IFNULL(`11~12`,0)+IFNULL(`12~13`,0)+IFNULL(`13~14`,0)+
-                IFNULL(`14~15`,0)+IFNULL(`15~16`,0)+IFNULL(`16~17`,0)+
-                IFNULL(`17~18`,0)+IFNULL(`18~19`,0)+IFNULL(`19~20`,0)+
-                IFNULL(`20~21`,0)+IFNULL(`21~22`,0)+IFNULL(`22~23`,0)+
-                IFNULL(`23~24`,0)+IFNULL(`24~`,0)
-            ) DESC
-        ) AS 순위
-
-    FROM db_metro.seoul_metro s
-    INNER JOIN metro_line m
-        ON s.역번호 = m.역번호
-
-    GROUP BY 
-        DATE(s.날짜),
-        m.역명,
-        s.구분
-) daily_ranked
-WHERE 순위 <= 50;
-    """
-
+def feat_02_spark_processing():
     try:
-        with mariadb_engine.begin() as conn:
-            # 기존 데이터 제거 (중복 방지)
-            conn.execute(text("truncate table feat_02"))
+        spark = SparkSession.builder.appName("feat_02_processing").getOrCreate()
+        spark.conf.set("spark.sql.ansi.enabled", "false")
 
-            # 집계 INSERT 실행
-            conn.execute(text(query))
+        jdbc_url = settings.jdbc_url
+        properties = {
+            "user": settings.my_user,
+            "password": settings.my_pwd,
+            "driver": "org.mariadb.jdbc.Driver"
+        }
 
-        return {"message": "feat_02 집계 데이터 생성 완료"}
+        # 1. 데이터 로드
+        raw_query = """
+        (SELECT 
+            s.`날짜`, s.`구분`, m.`역명`,
+            s.`05~06`, s.`06~07`, s.`07~08`, s.`08~09`, s.`09~10`, 
+            s.`10~11`, s.`11~12`, s.`12~13`, s.`13~14`, s.`14~15`, 
+            s.`15~16`, s.`16~17`, s.`17~18`, s.`18~19`, s.`19~20`, 
+            s.`20~21`, s.`21~22`, s.`22~23`, s.`23~24`, s.`24~`
+         FROM seoul_metro s
+         INNER JOIN metro_line m ON s.역번호 = m.역번호
+         WHERE s.`날짜` REGEXP '^[0-9]') AS joined_data
+        """
+        df = spark.read.jdbc(url=jdbc_url, table=raw_query, properties=properties).cache()
+        load_count = df.count()
+        logger.info(f"📊 [로드 완료] 원본 데이터 수: {load_count:,}건")
+
+        # 2. 날짜 정제
+        df = df.withColumn("날짜_fixed", to_date(regexp_replace(col("날짜"), r"[^0-9]", ""), "yyyyMMdd"))
+
+        # 3. Unpivot (시간대 컬럼들을 세로로 펼치기)
+        logger.info("🔄 [2/6] 시간대별 데이터 Unpivot(세로로 펼치기) 진행 중...")
+        time_cols = [
+            "'05~06', `05~06`","'06~07', `06~07`","'07~08', `07~08`","'08~09', `08~09`","'09~10', `09~10`",
+            "'10~11', `10~11`","'11~12', `11~12`","'12~13', `12~13`","'13~14', `13~14`","'14~15', `14~15`",
+            "'15~16', `15~16`","'16~17', `16~17`","'17~18', `17~18`","'18~19', `18~19`","'19~20', `19~20`",
+            "'20~21', `20~21`","'21~22', `21~22`","'22~23', `22~23`","'23~24', `23~24`","'24~', `24~`"
+        ]
+        stack_expr = f"stack(20, {', '.join(time_cols)}) as (`시간대`, `인원`)"
+        
+        unpivoted_df = df.selectExpr(
+            "`날짜_fixed` as `날짜` ", 
+            "`역명` as `역명` ", 
+            stack_expr,      # 시간대, 인원 생성
+            "`구분` as `기준` "
+        ).withColumn("인원", col("인원").cast("int")).na.fill(0).cache()
+
+        unpivot_count = unpivoted_df.count() # 변수 정의 완료
+        logger.info(f"📊 [Unpivot 완료] 펼쳐진 총 행 수: {unpivot_count:,}건")
+
+        # 4. 'ALL' 시간대 데이터 생성
+        daily_all_df = unpivoted_df.groupBy("날짜", "역명", "기준") \
+                                   .agg(_sum("인원").alias("인원")) \
+                                   .withColumn("시간대", expr("CAST('ALL' AS STRING)")) \
+                                   .select("날짜", "역명", "시간대", "기준", "인원") # 순서 고정
+
+        all_count = daily_all_df.count() # 변수 정의 완료
+        logger.info("🏆 [4/6] 시간대별/일일 TOP 50 순위 계산 중...")
+
+        # 5. 데이터 합치기 및 순위 계산
+        unpivoted_target = unpivoted_df.select("날짜", "역명", "시간대", "기준", "인원")
+        final_df = unpivoted_target.unionByName(daily_all_df, allowMissingColumns=True)
+
+        # [핵심] 인원이 0인 경우를 위해 역명을 보조 정렬로 추가 (Tie-break)
+        window_spec = Window.partitionBy("날짜", "시간대", "기준") \
+                            .orderBy(col("인원").desc(), col("역명").asc())
+        
+        # [핵심] DB 컬럼 순서(날짜, 역명, 시간대, 기준, 인원, 순위)와 100% 일치시킴
+        ranked_df = final_df.withColumn("순위", row_number().over(window_spec)) \
+                            .filter(col("순위") <= 50) \
+                            .select("날짜", "역명", "시간대", "기준", "인원", "순위") \
+                            .cache()
+
+        final_count = ranked_df.count()
+        logger.info(f"📊 [랭킹 완료] 최종 적재 대상 건수(TOP 50만 추출): {final_count:,}건")
+
+        # 6. 적재
+        ranked_df.write.format("jdbc") \
+            .option("url", jdbc_url) \
+            .option("dbtable", "feat_02") \
+            .option("user", settings.my_user) \
+            .option("password", settings.my_pwd) \
+            .option("driver", "org.mariadb.jdbc.Driver") \
+            .option("truncate", "true") \
+            .mode("overwrite") \
+            .save()
+
+        
+        # 7. 최종 확인
+        logger.info(f"✅ [6/6] Feat_02 모든 작업 완료! 최종 {final_count:,}건이 적재되었습니다.")
+
+        # 캐시 해제
+        df.unpersist(); unpivoted_df.unpersist(); ranked_df.unpersist()
+
+        return {
+            "status": "success",
+            "counts": {"original": load_count, "unpivoted": unpivot_count, "daily_all": all_count, "final_top50": final_count}
+        }
 
     except Exception as e:
+        logger.error(f"❌ Feat_02 오류 발생: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
