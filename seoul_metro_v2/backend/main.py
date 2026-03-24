@@ -3,11 +3,13 @@ from pyspark.sql.functions import trim, col
 from fastapi import FastAPI
 from sqlalchemy import create_engine, text
 from settings import settings
-from pages.spark_service import process_large_csv, sync_metro_to_db
-from pages.seoul_data import get_seoul_data
-import pages.feat_01 
-import pages.feat_02 
-import pages.feat_07 
+
+import pages.spark_service, \
+  pages.seoul_data, \
+  pages.feat_01, \
+  pages.feat_02, \
+  pages.feat_05, \
+  pages.feat_07
 import pandas as pd
 import os
 import traceback
@@ -140,87 +142,20 @@ def read_root():
     return {"status": False, "error": str(e)}
 
 
-# ==============================
-# 적재 API
-# ==============================
-@app.post("/sync_metro", tags=["1. 원천데이터 적재"])
-def sync_metro_data():
-  global spark  # 전역 변수 spark 세션 참조
-
-  if spark is None:
-    return {
-      "status": False, 
-      "error": "Spark session is not initialized. Please wait for startup."
-    }
-  
-  try:
-    # engine = create_engine(
-    #   settings.mariadb_url,
-    #   connect_args={"local_infile": 1}
-    # )
-    
-    folder_path = settings.file_dir
-
-    # --------------------------------------------------------------
-    # 자동 commit
-    # --------------------------------------------------------------
-    with mariadb_engine.begin() as conn:
-      # ------------------------------------------------------------
-      # DB의 전 데이터 삭제하는 SQL이므로 전체 데이터 적제 시에만 주석 해제
-      # 일부 데이터만 적제 시 미사용
-      # ------------------------------------------------------------
-      # conn.execute(text("TRUNCATE TABLE db_metro.seoul_metro"))
-
-
-      # ------------------------------------------------------------
-      # work 폴더에 존재하는 CSV파일 정재 및 적제 시작 부분
-      # 여기서 '_clean'으로 끝나는 파일이 아닌 .csv 파일만 바라봄
-      # ------------------------------------------------------------
-      for file in os.listdir(folder_path):
-        if file.endswith(".csv") and "_clean" not in file:
-          file_path = os.path.join(folder_path, file)
-
-          try:
-            print(f"정제 처리중: {file}")
-
-            # pandas의 chunk 기반 데이터 전달(하나의 CSV를 만번씩 전달 진행) 
-            # spark 기반 정제(만번씩 전달 받아서 정제 진행)
-            # 즉, 원본 CSV 파일의 데이터를 확인하여 
-            # 만번씩 정재된 데이터를 '_clean.csv' 파일에 저장 
-            # 핵심: 초기화된 spark 객체를 인자로 넘겨줍니다.
-            clean_file = process_large_csv(file_path, spark, 10000)
-
-            # DB 적재
-            # 최종 정제가 완료된 '_clean.csv' 파일을 이용하여 DB에 적재
-            sync_metro_to_db(conn, clean_file)
-
-            print(f"정제 처리완료: {file}")
-          except Exception as e:
-            print(f"실패: {file} / {e}")
-
-    return {"status": True, "message": "데이터 적재 완료"}
-
-  except Exception as e:
-    return {"status": False, "error": str(e)}
-
-
-# ================================================
-# 서울 열린데이터 광장의 메트로 라인 공공 데이터 받아오기
-# ================================================
-@app.post("/sync_line", tags=["1. 원천데이터 적재"])
-def sync_line_data():
-  try:
-    sata = get_seoul_data()
-
-    return {"status": True, "message": f"총 {sata}건 데이터 적재 완료"}
-
-  except Exception as e:
-    return {"status": False, "error": str(e)}
-
 # ================================================
 # api라우터 for문 돌리기
 # ================================================
 
-apis = [ pages.feat_01.router, pages.feat_02.router, pages.feat_07.router]
+apis = [ 
+  pages.spark_service.router, 
+  pages.seoul_data.router, 
+  pages.feat_01.router, 
+  pages.feat_02.router, 
+  pages.feat_05.router, 
+  pages.feat_07.router
+]
+
 for router in apis:
   app.include_router(router)
+  
+
