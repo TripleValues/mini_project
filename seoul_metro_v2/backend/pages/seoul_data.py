@@ -1,7 +1,16 @@
+from fastapi import APIRouter
 import pandas as pd
 import requests
 from sqlalchemy import create_engine, text
 from settings import settings
+
+
+router = APIRouter(prefix="/spark_service", tags=["1. 원천데이터 적재"])
+mariadb_engine = create_engine(settings.mariadb_url, connect_args={"local_infile": 1})
+
+# ==============================
+# 시간 컬럼 정규화 (핵심 수정)
+# ==============================
 
 def fetch_data():
   all_data = []
@@ -69,3 +78,17 @@ def get_seoul_data():
   print(f"총 {len(df)}건 적재 완료")
 
   return len(df)
+
+
+# ================================================
+# 서울 열린데이터 광장의 메트로 라인 공공 데이터 받아오기
+# ================================================
+@router.post("/sync_line")
+def sync_line_data():
+  try:
+    sata = get_seoul_data()
+
+    return {"status": True, "message": f"총 {sata}건 데이터 적재 완료"}
+
+  except Exception as e:
+    return {"status": False, "error": str(e)}
