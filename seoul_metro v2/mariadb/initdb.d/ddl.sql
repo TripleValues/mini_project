@@ -96,10 +96,10 @@ BEGIN
     END
   INTO result
   FROM seoul_metro
-  WHERE `날짜` = a
-    AND `역번호` = b
-    AND `역명` = c
-    AND `구분` = d
+  WHERE `날짜` COLLATE utf8mb4_unicode_ci = a
+    AND `역번호` COLLATE utf8mb4_unicode_ci = b
+    AND `역명` COLLATE utf8mb4_unicode_ci = c
+    AND `구분` COLLATE utf8mb4_unicode_ci = d
   LIMIT 1;
 
   RETURN result;
@@ -120,12 +120,12 @@ select '6' AS `코드`,'일요일' AS `요일`;
 
 -- 서울교통공사 데이터 광장 공공데이터에서 가져오는 호선 데이터용 테이블
 CREATE TABLE `db_metro`.`metro_line` (
-    `코드` VARCHAR(50) NOT NULL,
+    `역번호` VARCHAR(50) NOT NULL,
     `호선` VARCHAR(50) NOT NULL,
     `역명` VARCHAR(200) NULL DEFAULT NULL,
     `외부코드` VARCHAR(50) NULL DEFAULT NULL,
 
-    PRIMARY KEY (`코드`, `호선`)
+    PRIMARY KEY (`역번호`, `호선`)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- 전체 평균
@@ -165,26 +165,3 @@ CREATE INDEX idx_station ON seoul_metro(역번호);
 
 ALTER TABLE metro_line ADD PRIMARY KEY (역번호);
 ALTER TABLE metro_line ADD PRIMARY KEY (호선);
-
-
--- 계절 및 분기 데이터 뷰 테이블 생성
-
-CREATE OR REPLACE TABLE `metro_to_sq` AS
-SELECT
-  `날짜`, `역번호`, `역명`,
-  `05~06`, `06~07`, `07~08`, `08~09`, `09~10`, `10~11`, `11~12`,
-	`12~13`, `13~14`, `14~15`, `15~16`, `16~17`, `17~18`, `18~19`,
-	`19~20`, `20~21`, `21~22`, `22~23`, `23~24`, `24~`,
-	QUARTER(`날짜`) AS `분기`,
-  CONCAT(YEAR(`날짜`), '년 ', QUARTER(`날짜`), '분기') AS `년도분기`,
-  CASE
-    WHEN MONTH(`날짜`) IN (3,4,5) THEN '봄'
-    WHEN MONTH(`날짜`) IN (6,7,8) THEN '여름'
-    WHEN MONTH(`날짜`) IN (9,10,11) THEN '가을'
-    ELSE '겨울'
-  END AS `계절`,
-  `요일`
-FROM `seoul_metro`;
-
--- metro_to_sq
-CREATE INDEX idx_station ON metro_to_sq(역번호);
