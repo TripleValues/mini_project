@@ -337,8 +337,8 @@ def get_gr_data():
       "error": "Spark session is not initialized. Please wait for startup."
     }
   
-  year1 = 2021
-  year2 = 2017
+  year1 = 2017
+  year2 = 2021
 
   try:
     # 데이터 가져와서 return값으로 보내주기 위해 스타트하는 시간
