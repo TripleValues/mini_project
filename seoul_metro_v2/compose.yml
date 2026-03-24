@@ -13,16 +13,14 @@ services:
       - ./conf.d:/etc/mysql/conf.d:ro
       - data-mariadb:/var/lib/mysql:rw
     environment:
-      - MARIADB_HOST=localhost
-      - MARIADB_PORT=23306
       - MARIADB_ROOT_PASSWORD=1234
       - MARIADB_DATABASE=db_metro
       - TZ=Asia/Seoul
-      - LC_ALL:en_US.UTF-8
+      - LC_ALL=en_US.UTF-8
 
   spark-master:
     # image: apache/spark:4.1.1-java21-python3
-    image: my-spark:latest
+    image: my-spark:2026.03.23
     container_name: spark-master
     user: root
     environment:
@@ -49,7 +47,7 @@ services:
 
   spark-worker-1:
     # image: apache/spark:4.1.1-java21-python3
-    image: my-spark:latest
+    image: my-spark:2026.03.23
     container_name: spark-worker-1
     user: root
     environment:
@@ -75,7 +73,7 @@ services:
 
   spark-worker-2:
     # image: apache/spark:4.1.1-java21-python3
-    image: my-spark:latest
+    image: my-spark:2026.03.23
     container_name: spark-worker-2
     user: root
     environment:
