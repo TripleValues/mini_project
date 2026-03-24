@@ -1,9 +1,10 @@
 import logging
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, expr, row_number, sum as _sum, regexp_replace, to_date
 from pyspark.sql.window import Window
 from sqlalchemy import create_engine, text
+from typing import Optional
 from settings import settings
 
 logger = logging.getLogger(__name__)
@@ -51,8 +52,13 @@ def create_table():
     
 @router.post("/data_processing")
 def feat_02_spark_processing():
+    spark = None
     try:
-        spark = SparkSession.builder.appName("feat_02_processing").getOrCreate()
+        spark = SparkSession.builder.getOrCreate()
+       
+        # 세션이 잘 살아있는지 확인용 로그
+        logger.info(f"Using Spark Session: {spark.sparkContext.appName}")
+        
         spark.conf.set("spark.sql.ansi.enabled", "false")
 
         jdbc_url = settings.jdbc_url
@@ -151,5 +157,47 @@ def feat_02_spark_processing():
         }
 
     except Exception as e:
-        logger.error(f"❌ Feat_02 오류 발생: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"오류 발생: {e}")
+    finally:
+        if spark:
+            # 작업이 끝나면 명시적으로 세션을 닫아 리소스를 반납합니다.
+            spark.stop() 
+            logger.info("Spark 리소스 반납 완료")
+
+@router.get("/rankings")
+def get_metro_rankings(
+    date: str = Query(..., description="조회 날짜 (YYYY-MM-DD)"),
+    time_range: str = Query("ALL", description="시간대 (05~06, ALL 등)"),
+    type: str = Query("승차", description="기준 (승차/하차)"),
+    top_n: int = Query(10, ge=10, le=50, description="조회할 순위 범위")
+):
+    try:
+        # 사용자가 선택한 TOP N(10/20/50)에 맞춰 데이터를 가져오는 쿼리
+        query = text("""
+            SELECT 역명, 인원, 순위
+            FROM feat_02
+            WHERE 날짜 = :date 
+              AND 시간대 = :time_range 
+              AND 기준 = :type
+              AND 순위 <= :top_n
+            ORDER BY 순위 ASC
+        """)
+        
+        with mariadb_engine.connect() as conn:
+            result = conn.execute(query, {
+                "date": date, 
+                "time_range": time_range, 
+                "type": type, 
+                "top_n": top_n
+            })
+            
+            data = [dict(row) for row in result]
+            
+        if not data:
+            return {"message": "해당 조건의 역 정보가 없습니다.", "data": []}
+            
+        return {"status": "success", "data": data}
+
+    except Exception as e:
+        logger.error(f"조회 오류: {e}")
+        raise HTTPException(status_code=500, detail="데이터 조회 중 오류가 발생했습니다.")
