@@ -5,14 +5,20 @@ from sqlalchemy import create_engine, text
 from settings import settings
 from pages.spark_service import process_large_csv, sync_metro_to_db
 from pages.seoul_data import get_seoul_data
+from pages.feat_05 import get_seacon_data, df_to_json_safe
+
 import pages.feat_01 
 import pages.feat_02 
 import pages.feat_07 
 import pandas as pd
 import os
 import traceback
+import time
+import logging
 
 app = FastAPI()
+
+logger = logging.getLogger("uvicorn")
 
 spark = None
 # mariadb_engine = create_engine(settings.mariadb_url)
@@ -224,3 +230,68 @@ def sync_line_data():
 apis = [ pages.feat_01.router, pages.feat_02.router, pages.feat_07.router]
 for router in apis:
   app.include_router(router)
+  
+
+# ================================================
+# feat-05 계절 데이터 가져오기
+# ================================================
+
+@app.post("/season_metro", tags=["Feat_05"])
+def get_season_metro_data():
+  global spark
+
+  if spark is None:
+    return {
+      "status": False, 
+      "error": "Spark session is not initialized. Please wait for startup."
+    }
+  
+  years = 2008
+  season = "봄"
+
+  try:
+    # 데이터 가져와서 return값으로 보내주기 위해 스타트하는 시간
+    st_fl = time.time()
+
+    logger.info("[DB DATA 조회 시작]")
+
+    # 실제 실행 (Spark Action)
+    df = get_seacon_data(spark, years, season).cache()
+    # 가져온 데이터를 return값으로 보내주기 위해 스타트하는 시간
+    st_tl = time.time()
+    result = df.toJSON().collect()
+    # result = df.toPandas().to_dict(orient="records")
+    # 데이터 가져오는 시간 체크
+    get_data_time(st_fl, st_tl, result)
+    
+    logger.info("[DB DATA 조회 완료]")
+
+    return { "status": True, "data": result }
+
+  # Spark / JDBC / DB 에러
+  except Exception as e:
+    error_msg = str(e)
+
+    logger.error("ERROR 발생")
+    logger.error(error_msg)
+
+    return { "status": False, "error": error_msg }
+  
+
+
+# ================================================
+# 데이터 가져오는 시간 체크
+# ================================================
+
+def get_data_time(st_fl, st_tl, result):
+  
+  total_time = time.time() - st_tl
+  full_time = time.time() - st_fl
+
+  logger.info("="*50)
+  logger.info(f"[TOTAL TIME] : {total_time:.3f}")
+  logger.info(f"[FULL TIME]  : {full_time:.3f}")
+  logger.info(f"[DATA COUNT] : {len(result)}")
+  logger.info("="*50)
+  # logger.info(f"[DATA] : {result}")
+  # logger.info("="*50)
