@@ -141,7 +141,7 @@ def run_spark_feat01():
         logger.error(f"❌ 작업 중 오류 발생: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
     
-@router.get("/summary")
+@router.get("/metro_01")
 def get_metro_summary():
     try:
         # 1. DB에서 feat_01 테이블 데이터 조회 (최신 데이터순)

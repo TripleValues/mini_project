@@ -164,7 +164,7 @@ def feat_02_spark_processing():
             spark.stop() 
             logger.info("Spark 리소스 반납 완료")
 
-@router.get("/rankings")
+@router.get("/metro_02")
 def get_metro_rankings(
     date: str = Query(..., description="조회 날짜 (YYYY-MM-DD)"),
     time_range: str = Query("ALL", description="시간대 (05~06, ALL 등)"),
@@ -203,3 +203,13 @@ def get_metro_rankings(
     except Exception as e:
         logger.error(f"조회 오류: {e}")
         raise HTTPException(status_code=500, detail="데이터 조회 중 오류가 발생했습니다.")
+    
+@router.get("/available-times")
+def get_available_times():
+    # 전처리 시 사용했던 시간대 리스트를 반환
+    return [
+        "ALL", "05~06", "06~07", "07~08", "08~09", "09~10", 
+        "10~11", "11~12", "12~13", "13~14", "14~15", "15~16", 
+        "16~17", "17~18", "18~19", "19~20", "20~21", "21~22", 
+        "22~23", "23~24", "24~"
+    ]

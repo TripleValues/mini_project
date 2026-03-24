@@ -9,7 +9,7 @@ mariadb_engine = create_engine(settings.mariadb_url, connect_args={"local_infile
 
 router = APIRouter()
 
-@router.get("/export")
+@router.get("/metro_07")
 def export_data(
     feat: str = Query(..., description="feat_01 ~ feat_05"),
     format: str = Query("csv", description="csv | json | xlsx")
