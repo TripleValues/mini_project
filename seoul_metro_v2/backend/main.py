@@ -7,12 +7,14 @@ from pages.spark_service import process_large_csv, sync_metro_to_db
 from pages.seoul_data import get_seoul_data
 import pages.feat_01 
 import pages.feat_02 
-import pages.feat_07 
+import pages.feat_03
+# from pages.feat_03 import get_time_pattern
+import pages.feat_07
 import pandas as pd
 import os
 import traceback
 
-app = FastAPI()
+app = FastAPI(title="Seoul Metro API")
 
 spark = None
 # mariadb_engine = create_engine(settings.mariadb_url)
@@ -41,6 +43,7 @@ def startup_event():
       .config("spark.shuffle.io.maxRetries", "10") \
       .config("spark.shuffle.io.retryWait", "15s") \
       .config("spark.hadoop.fs.defaultFS", "file:///") \
+      .config("spark.sql.execution.arrow.pyspark.enabled", "true") \
       .config("spark.jars.packages", "org.mariadb.jdbc:mariadb-java-client:3.5.7") \
       .getOrCreate()
     print("Spark Session Created Successfully!")
@@ -53,6 +56,7 @@ def shutdown_event():
   try:
     if spark:
       spark.stop()
+      print("Spark Session Stopped.")
   except Exception as e:
     print("Spark already stopped or failed:", e)
   # if spark:
@@ -221,6 +225,11 @@ def sync_line_data():
 # api라우터 for문 돌리기
 # ================================================
 
-apis = [ pages.feat_01.router, pages.feat_02.router, pages.feat_07.router]
+apis = [ 
+  pages.feat_01.router, 
+  pages.feat_02.router, 
+  pages.feat_03.router, 
+  pages.feat_07.router
+]
 for router in apis:
   app.include_router(router)
