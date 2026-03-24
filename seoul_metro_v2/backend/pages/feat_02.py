@@ -191,7 +191,9 @@ def get_metro_rankings(
                 "top_n": top_n
             })
             
-            data = [dict(row) for row in result]
+            # data = [dict(row) for row in result]
+            # 💡 이 부분이 핵심 수정 사항입니다!
+            data = [row._asdict() for row in result]
             
         if not data:
             return {"message": "해당 조건의 역 정보가 없습니다.", "data": []}
