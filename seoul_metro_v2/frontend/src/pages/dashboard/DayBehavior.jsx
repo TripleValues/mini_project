@@ -25,7 +25,10 @@ const CHART_THEME = {
   },
 };
 
-const YEARS = ['2021','2020','2019','2018','2017','2016','2015'];
+const YEARS = [];
+for (let year = 2021; year >= 2008; year--) {
+  YEARS.push(year.toString());
+}
 const ON_OFF = ['전체','승차','하차'];
 const MODES = [
   { value: 'total', label: '전체 이용객', Icon: TrendingUp },
@@ -42,7 +45,7 @@ const HEAT_COLORS = [
   { value: 1,   color: '#4da3ff' },
 ];
 
-export default function DayBehavior() {
+const DayBehavior = () => {
   const [year, setYear]       = useState('2021');
   const [onOff, setOnOff]     = useState('전체');
   const [heatData, setHeatData] = useState([]);
@@ -276,3 +279,5 @@ export default function DayBehavior() {
     </div>
   );
 }
+
+export default DayBehavior;
