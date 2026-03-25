@@ -180,8 +180,82 @@ def get_available_times():
         "22~23", "23~24", "24~"
     ]
 
+# @router.get("/metro_02_01")
+# def get_metro_02_final_with_comparison_station(
+#     top_n: int = 10, 
+#     type: str = "all",
+#     target_year: int = 2021,
+#     target_month: int = 5,
+#     target_day: int = 15
+# ):
+#     try:
+#         spark = get_spark()
+        
+#         # 1. 데이터 로드
+#         df = spark.read.format("jdbc") \
+#             .option("url", settings.jdbc_url) \
+#             .option("dbtable", "feat_02") \
+#             .option("user", settings.my_user) \
+#             .option("password", settings.my_pwd) \
+#             .option("driver", "org.mariadb.jdbc.Driver") \
+#             .load()
+
+#         # 2. 날짜 설정
+#         target_date = datetime(target_year, target_month, target_day).date()
+#         prev_date = target_date - timedelta(days=1)
+
+#         def get_daily_stats(base_df, search_date, filter_type):
+#             daily_df = base_df.filter(col("날짜") == search_date)
+#             if filter_type.lower() != "all":
+#                 daily_df = daily_df.filter(col("기준") == filter_type)
+#             return daily_df.groupBy("역명").agg(F.sum("인원").alias("total")).orderBy(desc("total"))
+
+#         # 3. 당일 데이터 처리
+#         current_stats = get_daily_stats(df, target_date, type)
+#         chart_list = [row.asDict() for row in current_stats.limit(top_n).collect()]
+
+#         # [KPI] 당일 상위 1위 역
+#         today_top_row = current_stats.first()
+        
+#         # [KPI] 당일 하위 1위 역 (대조군 추출: 인원이 0보다 큰 역 중 최소값)
+#         bottom_row = current_stats.orderBy(F.asc("total")).filter(col("total") > 0).first()
+        
+#         # 격차 배수 계산
+#         scale_ratio = 0
+#         if today_top_row and bottom_row:
+#             scale_ratio = round(today_top_row["total"] / bottom_row["total"], 2)
+
+#         # [KPI] 전날 상위 1위 역
+#         prev_stats = get_daily_stats(df, prev_date, type)
+#         yesterday_top_row = prev_stats.first()
+
+#         return {
+#             "status": "success",
+#             "kpi": {
+#                 "today_top": {
+#                     "station_name": today_top_row["역명"] if today_top_row else "N/A",
+#                     "value": today_top_row["total"] if today_top_row else 0
+#                 },
+#                 "yesterday_top": {
+#                     "station_name": yesterday_top_row["역명"] if yesterday_top_row else "N/A",
+#                     "value": yesterday_top_row["total"] if yesterday_top_row else 0
+#                 },
+#                 "scale_insight": {
+#                     "ratio": scale_ratio,
+#                     "top_station": today_top_row["역명"] if today_top_row else "N/A",
+#                     "bottom_station": bottom_row["역명"] if bottom_row else "N/A", # 대조군 역명 추가
+#                     "bottom_value": bottom_row["total"] if bottom_row else 0       # 대조군 수치 추가
+#                 }
+#             },
+#             "chart_data": chart_list
+#         }
+
+#     except Exception as e:
+#         logger.error(f"❌ METRO-02 데이터 처리 오류: {str(e)}")
+#         raise HTTPException(status_code=500, detail="데이터 분석 중 오류 발생")
+    
 @router.get("/metro_02_01")
-def get_metro_02_final_with_comparison_station(
+def get_metro_02_chart_data(
     top_n: int = 10, 
     type: str = "all",
     target_year: int = 2021,
@@ -190,8 +264,9 @@ def get_metro_02_final_with_comparison_station(
 ):
     try:
         spark = get_spark()
-        
-        # 1. 데이터 로드
+        target_date = datetime(target_year, target_month, target_day).date()
+
+        # 데이터 로드
         df = spark.read.format("jdbc") \
             .option("url", settings.jdbc_url) \
             .option("dbtable", "feat_02") \
@@ -200,56 +275,92 @@ def get_metro_02_final_with_comparison_station(
             .option("driver", "org.mariadb.jdbc.Driver") \
             .load()
 
-        # 2. 날짜 설정
+        # 당일 데이터 필터링
+        daily_df = df.filter(col("날짜") == target_date)
+        if type.lower() != "all":
+            daily_df = daily_df.filter(col("기준") == type)
+
+        # 차트용 Top N 집계 (순위 컬럼이 이미 있으므로 filter가 더 빠를 수 있음)
+        chart_data = daily_df.groupBy("역명") \
+            .agg(F.sum("인원").alias("total")) \
+            .orderBy(desc("total")) \
+            .limit(top_n) \
+            .collect()
+
+        return {
+            "status": "success",
+            "chart_data": [row.asDict() for row in chart_data]
+        }
+    except Exception as e:
+        logger.error(f"❌ 차트 데이터 로딩 오류: {str(e)}")
+        raise HTTPException(status_code=500, detail="차트 데이터를 불러오지 못했습니다.")
+    
+@router.get("/metro_02_02")
+def get_metro_02_kpi_insights(
+    type: str = "all",
+    target_year: int = 2021,
+    target_month: int = 5,
+    target_day: int = 15
+):
+    try:
+        spark = get_spark()
         target_date = datetime(target_year, target_month, target_day).date()
         prev_date = target_date - timedelta(days=1)
 
-        def get_daily_stats(base_df, search_date, filter_type):
-            daily_df = base_df.filter(col("날짜") == search_date)
-            if filter_type.lower() != "all":
-                daily_df = daily_df.filter(col("기준") == filter_type)
-            return daily_df.groupBy("역명").agg(F.sum("인원").alias("total")).orderBy(desc("total"))
+        df = spark.read.format("jdbc") \
+            .option("url", settings.jdbc_url) \
+            .option("dbtable", "feat_02") \
+            .option("user", settings.my_user) \
+            .option("password", settings.my_pwd) \
+            .option("driver", "org.mariadb.jdbc.Driver") \
+            .load()
 
-        # 3. 당일 데이터 처리
-        current_stats = get_daily_stats(df, target_date, type)
-        chart_list = [row.asDict() for row in current_stats.limit(top_n).collect()]
+        # 헬퍼 함수: 특정 날짜의 통계 추출
+        def fetch_stats(search_date):
+            base = df.filter(col("날짜") == search_date)
+            if type.lower() != "all":
+                base = base.filter(col("기준") == type)
+            
+            # 역별 합계 계산 (데이터가 적은 Feat_02 테이블이므로 collect 후 처리가 더 빠를 수도 있음)
+            stats = base.groupBy("역명").agg(F.sum("인원").alias("total")).cache()
+            
+            top = stats.orderBy(desc("total")).first()
+            bottom = stats.filter(col("total") > 0).orderBy(F.asc("total")).first()
+            
+            stats.unpersist() # 캐시 해제
+            return top, bottom
 
-        # [KPI] 당일 상위 1위 역
-        today_top_row = current_stats.first()
-        
-        # [KPI] 당일 하위 1위 역 (대조군 추출: 인원이 0보다 큰 역 중 최소값)
-        bottom_row = current_stats.orderBy(F.asc("total")).filter(col("total") > 0).first()
-        
+        # 당일 및 전일 데이터 가져오기
+        today_top, today_bottom = fetch_stats(target_date)
+        # yesterday_top, _ = fetch_stats(prev_date)
+
         # 격차 배수 계산
         scale_ratio = 0
-        if today_top_row and bottom_row:
-            scale_ratio = round(today_top_row["total"] / bottom_row["total"], 2)
-
-        # [KPI] 전날 상위 1위 역
-        prev_stats = get_daily_stats(df, prev_date, type)
-        yesterday_top_row = prev_stats.first()
+        if today_top and today_bottom:
+            scale_ratio = round(today_top["total"] / today_bottom["total"], 2)
 
         return {
             "status": "success",
             "kpi": {
                 "today_top": {
-                    "station_name": today_top_row["역명"] if today_top_row else "N/A",
-                    "value": today_top_row["total"] if today_top_row else 0
+                    "station_name": today_top["역명"] if today_top else "N/A",
+                    "value": today_top["total"] if today_top else 0
                 },
-                "yesterday_top": {
-                    "station_name": yesterday_top_row["역명"] if yesterday_top_row else "N/A",
-                    "value": yesterday_top_row["total"] if yesterday_top_row else 0
-                },
+                # "yesterday_top": {
+                #     "station_name": yesterday_top["역명"] if yesterday_top else "N/A",
+                #     "value": yesterday_top["total"] if yesterday_top else 0
+                # },
                 "scale_insight": {
                     "ratio": scale_ratio,
-                    "top_station": today_top_row["역명"] if today_top_row else "N/A",
-                    "bottom_station": bottom_row["역명"] if bottom_row else "N/A", # 대조군 역명 추가
-                    "bottom_value": bottom_row["total"] if bottom_row else 0       # 대조군 수치 추가
+                    "top_station": today_top["역명"] if today_top else "N/A",
+                    "bottom_station": today_bottom["역명"] if today_bottom else "N/A",
+                    "bottom_value": today_bottom["total"] if today_bottom else 0
                 }
-            },
-            "chart_data": chart_list
+            }
         }
-
     except Exception as e:
-        logger.error(f"❌ METRO-02 데이터 처리 오류: {str(e)}")
-        raise HTTPException(status_code=500, detail="데이터 분석 중 오류 발생")
+        logger.error(f"❌ KPI 데이터 계산 오류: {str(e)}")
+        raise HTTPException(status_code=500, detail="인사이트 데이터를 계산하지 못했습니다.")
+
+
+    # 병렬 호출: 리액트(Frontend)에서 useEffect 내부에 Promise.all([fetch('02_01'), fetch('02_02')])를 사용하면 두 API가 동시에 서버에 요청을 날려 전체 로딩 시간을 단축할 수 있습니다.
