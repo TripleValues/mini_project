@@ -32,7 +32,6 @@ class Settings(BaseSettings):
   react_url: str
   
   # 안씀
-  react_url: str
   hadoop_path: str
 
   model_config = SettingsConfigDict(
