@@ -6,9 +6,7 @@ import pyspark.sql.functions as F
 from pyspark.sql.functions import col, expr, row_number, sum as _sum, regexp_replace, to_date, desc
 from pyspark.sql.window import Window
 from sqlalchemy import create_engine, text
-from typing import Optional
 from settings import settings
-
 
 def get_spark():
     return SparkSession.builder.getOrCreate()
