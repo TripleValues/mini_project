@@ -27,8 +27,10 @@ app.add_middleware(
 )
 
 
+@app.get("/hello")
+def read_hello():
+  return {"status": True, "result": ["공유는 해드림"]}
 
-app = FastAPI()
 
 spark = None
 # mariadb_engine = create_engine(settings.mariadb_url)
