@@ -1,21 +1,177 @@
-import { TrendingUp } from 'lucide-react';
-import styles from './Placeholder.module.css';
+import React, { useEffect, useState, useMemo } from 'react';
+import axios from 'axios';
+import { ResponsiveLine } from '@nivo/line';
+import { TrendingUp, Loader2, Users, Activity, Scale, ChevronLeft } from 'lucide-react';
+import styles from '@styles/Placeholder.module.css';
 
 export default function YearlyTrend() {
+  const [rawData, setRawData] = useState([]); 
+  const [kpiData, setKpiData] = useState(null); // KPI 정보 저장 (성장률, 균형도 등)
+  const [loading, setLoading] = useState(true);
+  const [selectedType, setSelectedType] = useState('전체');
+  const [viewMode, setViewMode] = useState('yearly'); 
+  const [targetYear, setTargetYear] = useState(null);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`http://localhost:8000/feat_01/metro_01_total`, {
+        params: { type: selectedType }
+      });
+      if (response.data.status === "success") {
+        setRawData(response.data.main_chart);
+        setKpiData(response.data); // KPI 관련 데이터 전체 저장
+      }
+    } catch (error) {
+      console.error("데이터 로드 실패:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [selectedType]);
+
+  // 현재 화면에 맞는 KPI 수치 계산
+  const currentKPI = useMemo(() => {
+    if (!kpiData) return { total: 0, growth: 0, balance: 0 };
+
+    // Drill-down 모드일 경우 해당 연도 필터링, 아니면 가장 최신 데이터 기준
+    const target = viewMode === 'monthly' 
+      ? kpiData.kpi_growth.filter(d => d.년도 === parseInt(targetYear))
+      : [kpiData.kpi_growth[kpiData.kpi_growth.length - 1]];
+    
+    const balanceTarget = viewMode === 'monthly'
+      ? kpiData.kpi_balance.filter(d => d.년도 === parseInt(targetYear))
+      : [kpiData.kpi_balance[0]];
+
+    return {
+      total: target.reduce((sum, d) => sum + d.total, 0),
+      growth: target[target.length - 1]?.growth_rate || 0,
+      balance: balanceTarget[0]?.balance_ratio || 0
+    };
+  }, [kpiData, viewMode, targetYear]);
+
+  const chartData = useMemo(() => {
+    if (rawData.length === 0) return [];
+    if (viewMode === 'yearly') {
+      const yearlyMap = rawData.reduce((acc, item) => {
+        const year = item.label.split('-')[0];
+        acc[year] = (acc[year] || 0) + item.display_value;
+        return acc;
+      }, {});
+      return [{
+        id: `연간 ${selectedType}`,
+        data: Object.keys(yearlyMap).sort().map(year => ({ x: year, y: yearlyMap[year] }))
+      }];
+    } else {
+      const monthlyData = rawData
+        .filter(item => item.label.startsWith(targetYear))
+        .map(item => ({ x: item.label.split('-')[1] + "월", y: item.display_value }));
+      return [{ id: `${targetYear}년 상세`, data: monthlyData }];
+    }
+  }, [rawData, viewMode, targetYear, selectedType]);
+
   return (
     <div className={styles.page}>
-      <div className={styles.placeholder}>
-        <TrendingUp size={40} className={styles.icon} />
-        <span className={styles.label}>연도별 이용객 추이 시각화</span>
-        <span className={styles.sub}>
-          2008–2021년 서울 지하철 전체 성장 흐름을<br/>
-          영역 차트(Area Chart)로 시각화합니다.
-        </span>
-        <div className={styles.metaRow}>
-          <span className={styles.badge}>METRO-01</span>
-          <span className={styles.badge}>FEAT-01</span>
-          <span className={styles.badge}>준비 중</span>
+      {/* 1. 헤더 영역 */}
+      <div className={styles.header} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <TrendingUp size={28} color="#8884d8" />
+          <h2 className={styles.label}>
+            {viewMode === 'yearly' ? "연도별 이용객 거시 추이" : `${targetYear}년 월별 상세 분석`}
+          </h2>
+          {viewMode === 'monthly' && (
+            <button onClick={() => setViewMode('yearly')} style={{ cursor: 'pointer', border: 'none', background: '#eee', padding: '4px 12px', borderRadius: '4px', display: 'flex', alignItems: 'center', color:'#000000' }}>
+              <ChevronLeft size={16} /> 돌아가기
+            </button>
+          )}
         </div>
+        <div className={styles.filterGroup}>
+          {['전체', '승차', '하차'].map((t) => (
+            <button key={t} onClick={() => setSelectedType(t)} style={{ padding: '8px 16px', backgroundColor: selectedType === t ? '#8884d8' : '#fff', color: selectedType === t ? '#fff' : '#666', border: '1px solid #ddd', borderRadius: '20px', cursor: 'pointer', marginLeft: '8px' }}>
+              {t}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* 2. KPI 카드 섹션 (기획서 METRO-01 반영) */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '20px' }}>
+        <div style={{ padding: '20px', background: '#fff', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', borderLeft: '5px solid #8884d8' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#666', fontSize: '14px', marginBottom: '8px' }}>
+            <Users size={16} /> 연간 총 이용객
+          </div>
+          <div style={{ fontSize: '24px', fontWeight: 'bold',color:'#000000' }}>{currentKPI.total.toLocaleString()} <span style={{fontSize: '14px', fontWeight: 'normal', color:'#000000'}}>명</span></div>
+        </div>
+        <div style={{ padding: '20px', background: '#fff', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', borderLeft: '5px solid #ff9f43' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#666', fontSize: '14px', marginBottom: '8px' }}>
+            <Activity size={16} /> 전년 대비 성장률
+          </div>
+          <div style={{ fontSize: '24px', fontWeight: 'bold', color: currentKPI.growth >= 0 ? '#ef4444' : '#3b82f6' }}>
+            {currentKPI.growth}%
+          </div>
+        </div>
+        <div style={{ padding: '20px', background: '#fff', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', borderLeft: '5px solid #10b981' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#666', fontSize: '14px', marginBottom: '8px' }}>
+            <Scale size={16} /> 승하차 균형도
+          </div>
+          <div style={{ fontSize: '24px', fontWeight: 'bold',color: currentKPI.balance >= 0 ? '#3b82f6' : '#ef4444'}}>{currentKPI.balance} <span style={{fontSize: '14px', fontWeight: 'normal',color:'#000000'}}>%</span></div>
+        </div>
+      </div>
+
+      {/* 3. 메인 차트 영역 */}
+      <div className={styles.chartContainer} style={{ height: '450px', background: '#fff', padding: '20px', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+        {loading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+            <Loader2 className="animate-spin" /> <span style={{marginLeft: '10px'}}>데이터 처리 중...</span>
+          </div>
+        ) : (
+          <ResponsiveLine
+            data={chartData}
+            margin={{ top: 20, right: 30, bottom: 60, left: 90 }}
+            xScale={{ type: 'point' }}
+            yScale={{ type: 'linear', min: 'auto', max: 'auto' }}
+            axisBottom={{
+              legend: viewMode === 'yearly' ? '연도 클릭 시 상세 보기' : '월별 추이',
+              legendOffset: 45, legendPosition: 'middle'
+            }}
+            axisLeft={{
+              format: v => `${(v / 1000000).toFixed(1)}M`,
+              legend: '이용객 (백만)', legendOffset: -70, legendPosition: 'middle'
+            }}
+            enableArea={true}
+            areaOpacity={0.15}
+            useMesh={true}
+            onClick={(node) => {
+              if (viewMode === 'yearly') {
+                setTargetYear(node.data.x);
+                setViewMode('monthly');
+              }
+            }}
+            theme={{
+            tooltip: {
+              container: {
+                background: '#ffffff', // 툴팁 배경색
+                color: '#420505',       // 툴팁 글자색 (이 부분을 수정하세요!)
+                fontSize: '12px',
+                borderRadius: '8px',
+              },
+            },
+            // 축(Axis) 글자색도 바꾸고 싶다면 아래 추가
+            axis: {
+              ticks: { text: { fill: '#666' } },
+              legend: { text: { fill: '#333', fontWeight: 'bold' } }
+            }
+          }}
+            colors={viewMode === 'yearly' ? ['#8884d8'] : ['#10b981']}
+            pointSize={10}
+            pointColor="#000000"
+            pointBorderWidth={2}
+            pointBorderColor={{ from: 'serieColor' }}
+          />
+        )}
       </div>
     </div>
   );

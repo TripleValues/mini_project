@@ -3,7 +3,7 @@ import { ResponsiveHeatMap } from '@nivo/heatmap';
 import { BarChart2, List, X, AlertCircle, TrendingUp, Moon } from 'lucide-react';
 import { fetchHeatmap, fetchClickRanking } from '../../utils/network.js';
 import LoadingOverlay from '../../components/LoadingOverlay.jsx';
-import styles from './DayBehavior.module.css';
+import styles from '@styles/DayBehavior.module.css';
 
 // ── 차트 테마 ──────────────────────────────────────────────────
 const CHART_THEME = {

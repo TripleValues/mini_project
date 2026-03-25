@@ -120,7 +120,7 @@ def feat_02_spark_processing():
                                    .select("날짜", "역명", "시간대", "기준", "인원") # 순서 고정
 
         all_count = daily_all_df.count() # 변수 정의 완료
-        logger.info("🏆 [4/6] 시간대별/일일 TOP 50 순위 계산 중...")
+        logger.info("🏆 [4/6] 시간대별/일일 TOP 20 순위 계산 중...")
 
         # 5. 데이터 합치기 및 순위 계산
         unpivoted_target = unpivoted_df.select("날짜", "역명", "시간대", "기준", "인원")
@@ -132,12 +132,12 @@ def feat_02_spark_processing():
         
         # [핵심] DB 컬럼 순서(날짜, 역명, 시간대, 기준, 인원, 순위)와 100% 일치시킴
         ranked_df = final_df.withColumn("순위", row_number().over(window_spec)) \
-                            .filter(col("순위") <= 50) \
+                            .filter(col("순위") <= 20) \
                             .select("날짜", "역명", "시간대", "기준", "인원", "순위") \
                             .cache()
 
         final_count = ranked_df.count()
-        logger.info(f"📊 [랭킹 완료] 최종 적재 대상 건수(TOP 50만 추출): {final_count:,}건")
+        logger.info(f"📊 [랭킹 완료] 최종 적재 대상 건수(TOP 20만 추출): {final_count:,}건")
 
         # 6. 적재
         ranked_df.write.format("jdbc") \

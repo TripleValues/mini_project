@@ -96,6 +96,30 @@ services:
       - spark-network
     # command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
     command: start-worker.sh spark://spark-master:7077
+  
+  react.myapp.com:
+    container_name: react.myapp.com
+    build:
+      context: .
+      dockerfile: react.Dockerfile
+    depends_on:
+      - fastapi1.myapp.com
+    ports:
+      - 80:80
+    working_dir: /workspace
+
+  fastapi1.myapp.com:
+    container_name: fastapi1.myapp.com
+    build:
+      context: .
+      dockerfile: fastapi1.Dockerfile
+    depends_on:
+      - mariadb
+      - redis
+      - kafka
+    ports:
+      - 8001:8000
+    working_dir: /workspace
 
 networks:
   spark-network:

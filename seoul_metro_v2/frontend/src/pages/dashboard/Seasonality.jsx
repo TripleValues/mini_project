@@ -1,5 +1,5 @@
 import { Calendar } from 'lucide-react';
-import styles from './Placeholder.module.css';
+import styles from '@styles/Placeholder.module.css';
 
 export default function Seasonality() {
   return (

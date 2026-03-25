@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 import {
   TrendingUp, BarChart2, Clock, Grid, Calendar, Train
 } from 'lucide-react';
-import styles from './Nav.module.css';
+import styles from '@styles/Nav.module.css';
 
 const MENU = [
   { path: '/yearly',   label: '연도별 추이',       sub: 'METRO-01', Icon: TrendingUp  },

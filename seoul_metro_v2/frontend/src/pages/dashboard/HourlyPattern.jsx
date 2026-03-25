@@ -3,7 +3,7 @@ import { ResponsiveLine } from '@nivo/line';
 import { Search, Clock, Zap, Users, AlertCircle } from 'lucide-react';
 import { fetchTimePattern, fetchGoldenTime } from '../../utils/network.js';
 import LoadingOverlay from '../../components/LoadingOverlay.jsx';
-import styles from './HourlyPattern.module.css';
+import styles from '@styles/HourlyPattern.module.css';
 
 // ── 시간대 정렬 ────────────────────────────────────────────────
 const TIME_ORDER = [

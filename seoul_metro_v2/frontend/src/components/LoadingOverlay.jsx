@@ -1,4 +1,4 @@
-import styles from './LoadingOverlay.module.css';
+import styles from '@styles/LoadingOverlay.module.css';
 
 export default function LoadingOverlay({ message = '데이터 로딩 중...' }) {
   return (

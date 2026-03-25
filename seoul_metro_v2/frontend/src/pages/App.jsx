@@ -1,12 +1,12 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Nav from '../components/Nav.jsx';
 import Header from '../components/Header.jsx';
-import YearlyTrend   from './dashboard/YearlyTrend.jsx';
-import TopStations   from './dashboard/TopStations.jsx';
-import HourlyPattern from './dashboard/HourlyPattern.jsx';
-import DayBehavior   from './dashboard/DayBehavior.jsx';
-import Seasonality   from './dashboard/Seasonality.jsx';
-import styles from './App.module.css';
+import YearlyTrend   from '@pages/dashboard/YearlyTrend.jsx';
+import TopStations   from '@pages/dashboard/TopStations.jsx';
+import HourlyPattern from '@pages/dashboard/HourlyPattern.jsx';
+import DayBehavior   from '@pages/dashboard/DayBehavior.jsx';
+import Seasonality   from '@pages/dashboard/Seasonality.jsx';
+import styles from '@styles/App.module.css';
 
 export default function App() {
   return (

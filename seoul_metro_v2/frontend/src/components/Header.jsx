@@ -1,6 +1,6 @@
 import { useLocation } from 'react-router-dom';
 import { Database, Activity } from 'lucide-react';
-import styles from './Header.module.css';
+import styles from '@styles/Header.module.css';
 
 const PAGE_META = {
   '/yearly':   { title: '연도별 이용객 추이 분석', desc: '2008–2021 서울 지하철 전체 성장 흐름 파악' },
