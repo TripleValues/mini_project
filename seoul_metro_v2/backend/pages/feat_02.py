@@ -1,11 +1,17 @@
 import logging
-from fastapi import APIRouter, HTTPException, Query
+from datetime import datetime, timedelta
+from fastapi import APIRouter, HTTPException
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, expr, row_number, sum as _sum, regexp_replace, to_date
+import pyspark.sql.functions as F
+from pyspark.sql.functions import col, expr, row_number, sum as _sum, regexp_replace, to_date, desc
 from pyspark.sql.window import Window
 from sqlalchemy import create_engine, text
 from typing import Optional
 from settings import settings
+
+
+def get_spark():
+    return SparkSession.builder.getOrCreate()
 
 logger = logging.getLogger(__name__)
 mariadb_engine = create_engine(settings.mariadb_url, connect_args={"local_infile": 1})
@@ -164,46 +170,6 @@ def feat_02_spark_processing():
             spark.stop() 
             logger.info("Spark 리소스 반납 완료")
 
-@router.get("/metro_02")
-def get_metro_rankings(
-    date: str = Query(..., description="조회 날짜 (YYYY-MM-DD)"),
-    time_range: str = Query("ALL", description="시간대 (05~06, ALL 등)"),
-    type: str = Query("승차", description="기준 (승차/하차)"),
-    top_n: int = Query(10, ge=10, le=50, description="조회할 순위 범위")
-):
-    try:
-        # 사용자가 선택한 TOP N(10/20/50)에 맞춰 데이터를 가져오는 쿼리
-        query = text("""
-            SELECT 역명, 인원, 순위
-            FROM feat_02
-            WHERE 날짜 = :date 
-              AND 시간대 = :time_range 
-              AND 기준 = :type
-              AND 순위 <= :top_n
-            ORDER BY 순위 ASC
-        """)
-        
-        with mariadb_engine.connect() as conn:
-            result = conn.execute(query, {
-                "date": date, 
-                "time_range": time_range, 
-                "type": type, 
-                "top_n": top_n
-            })
-            
-            # data = [dict(row) for row in result]
-            # 💡 이 부분이 핵심 수정 사항입니다!
-            data = [row._asdict() for row in result]
-            
-        if not data:
-            return {"message": "해당 조건의 역 정보가 없습니다.", "data": []}
-            
-        return {"status": "success", "data": data}
-
-    except Exception as e:
-        logger.error(f"조회 오류: {e}")
-        raise HTTPException(status_code=500, detail="데이터 조회 중 오류가 발생했습니다.")
-    
 @router.get("/available-times")
 def get_available_times():
     # 전처리 시 사용했던 시간대 리스트를 반환
@@ -213,3 +179,77 @@ def get_available_times():
         "16~17", "17~18", "18~19", "19~20", "20~21", "21~22", 
         "22~23", "23~24", "24~"
     ]
+
+@router.get("/metro_02_01")
+def get_metro_02_final_with_comparison_station(
+    top_n: int = 10, 
+    type: str = "all",
+    target_year: int = 2021,
+    target_month: int = 5,
+    target_day: int = 15
+):
+    try:
+        spark = get_spark()
+        
+        # 1. 데이터 로드
+        df = spark.read.format("jdbc") \
+            .option("url", settings.jdbc_url) \
+            .option("dbtable", "feat_02") \
+            .option("user", settings.my_user) \
+            .option("password", settings.my_pwd) \
+            .option("driver", "org.mariadb.jdbc.Driver") \
+            .load()
+
+        # 2. 날짜 설정
+        target_date = datetime(target_year, target_month, target_day).date()
+        prev_date = target_date - timedelta(days=1)
+
+        def get_daily_stats(base_df, search_date, filter_type):
+            daily_df = base_df.filter(col("날짜") == search_date)
+            if filter_type.lower() != "all":
+                daily_df = daily_df.filter(col("기준") == filter_type)
+            return daily_df.groupBy("역명").agg(F.sum("인원").alias("total")).orderBy(desc("total"))
+
+        # 3. 당일 데이터 처리
+        current_stats = get_daily_stats(df, target_date, type)
+        chart_list = [row.asDict() for row in current_stats.limit(top_n).collect()]
+
+        # [KPI] 당일 상위 1위 역
+        today_top_row = current_stats.first()
+        
+        # [KPI] 당일 하위 1위 역 (대조군 추출: 인원이 0보다 큰 역 중 최소값)
+        bottom_row = current_stats.orderBy(F.asc("total")).filter(col("total") > 0).first()
+        
+        # 격차 배수 계산
+        scale_ratio = 0
+        if today_top_row and bottom_row:
+            scale_ratio = round(today_top_row["total"] / bottom_row["total"], 2)
+
+        # [KPI] 전날 상위 1위 역
+        prev_stats = get_daily_stats(df, prev_date, type)
+        yesterday_top_row = prev_stats.first()
+
+        return {
+            "status": "success",
+            "kpi": {
+                "today_top": {
+                    "station_name": today_top_row["역명"] if today_top_row else "N/A",
+                    "value": today_top_row["total"] if today_top_row else 0
+                },
+                "yesterday_top": {
+                    "station_name": yesterday_top_row["역명"] if yesterday_top_row else "N/A",
+                    "value": yesterday_top_row["total"] if yesterday_top_row else 0
+                },
+                "scale_insight": {
+                    "ratio": scale_ratio,
+                    "top_station": today_top_row["역명"] if today_top_row else "N/A",
+                    "bottom_station": bottom_row["역명"] if bottom_row else "N/A", # 대조군 역명 추가
+                    "bottom_value": bottom_row["total"] if bottom_row else 0       # 대조군 수치 추가
+                }
+            },
+            "chart_data": chart_list
+        }
+
+    except Exception as e:
+        logger.error(f"❌ METRO-02 데이터 처리 오류: {str(e)}")
+        raise HTTPException(status_code=500, detail="데이터 분석 중 오류 발생")
