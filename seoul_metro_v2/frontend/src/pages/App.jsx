@@ -1,21 +1,20 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import Nav from '../components/Nav.jsx';
-import Header from '../components/Header.jsx';
-import YearlyTrend   from './dashboard/YearlyTrend.jsx';
-import TopStations   from './dashboard/TopStations.jsx';
-import HourlyPattern from './dashboard/HourlyPattern.jsx';
-import DayBehavior   from './dashboard/DayBehavior.jsx';
-import Seasonality   from './dashboard/Seasonality.jsx';
-import styles from './App.module.css';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import '@styles/App.css';
+import Nav from '@components/Nav.jsx';
+import Header from '@components/Header.jsx';
+import YearlyTrend   from '@pages/dashboard/YearlyTrend.jsx';
+import TopStations   from '@pages/dashboard/TopStations.jsx';
+import HourlyPattern from '@pages/dashboard/HourlyPattern.jsx';
+import DayBehavior   from '@pages/dashboard/DayBehavior.jsx';
+import Seasonality   from '@pages/dashboard/Seasonality.jsx';
 
-export default function App() {
+const App = () => {
   return (
-    <BrowserRouter>
-      <div className={styles.shell}>
+      <div className="app-shell">
         <Nav />
-        <div className={styles.main}>
+        <div className="app-main">
           <Header />
-          <main className={styles.content}>
+          <main className="app-content">
             <Routes>
               <Route path="/" element={<Navigate to="/behavior" replace />} />
               <Route path="/yearly"   element={<YearlyTrend />} />
@@ -27,6 +26,7 @@ export default function App() {
           </main>
         </div>
       </div>
-    </BrowserRouter>
   );
 }
+
+export default App;

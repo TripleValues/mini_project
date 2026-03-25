@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ResponsiveLine } from '@nivo/line';
 import { Search, Clock, Zap, Users, AlertCircle } from 'lucide-react';
-import { fetchTimePattern, fetchGoldenTime } from '../../utils/network.js';
-import LoadingOverlay from '../../components/LoadingOverlay.jsx';
-import styles from './HourlyPattern.module.css';
+import { fetchTimePattern, fetchGoldenTime } from '@utils/network.js';
+import LoadingOverlay from '@components/LoadingOverlay.jsx';
+import '@styles/HourlyPattern.css';
 
 // ── 시간대 정렬 ────────────────────────────────────────────────
 const TIME_ORDER = [
@@ -42,7 +42,7 @@ const CHART_THEME = {
 
 const YEARS = ['2021','2020','2019','2018','2017','2016','2015'];
 
-export default function HourlyPattern() {
+const HourlyPattern = () => {
   const [year, setYear] = useState('2021');
   const [station, setStation] = useState('강남');
   const [inputVal, setInputVal] = useState('강남');
@@ -99,36 +99,36 @@ export default function HourlyPattern() {
   };
 
   return (
-    <div className={styles.page}>
+    <div className="page">
       {/* ── 컨트롤 바 ─────────────────────────────────────── */}
-      <div className={styles.controls}>
-        <div className={styles.searchBox}>
-          <Search size={14} className={styles.searchIcon} />
+      <div className="controls">
+        <div className="searchBox">
+          <Search size={14} className="searchIcon" />
           <input
-            className={styles.searchInput}
+            className="searchInput"
             value={inputVal}
             onChange={e => setInputVal(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSearch()}
             placeholder="역명 입력 (예: 강남, 홍대입구)"
           />
-          <button className={styles.searchBtn} onClick={handleSearch}>검색</button>
+          <button className="searchBtn" onClick={handleSearch}>검색</button>
         </div>
 
-        <div className={styles.filterGroup}>
+        <div className="filterGroup">
           {YEARS.map(y => (
             <button
               key={y}
-              className={`${styles.filterBtn} ${year === y ? styles.active : ''}`}
+              className={`filterBtn ${year === y ? 'active' : ''}`}
               onClick={() => setYear(y)}
             >{y}</button>
           ))}
         </div>
 
-        <div className={styles.filterGroup}>
+        <div className="filterGroup">
           {['평일','주말'].map(d => (
             <button
               key={d}
-              className={`${styles.filterBtn} ${dayType === d ? styles.active : ''}`}
+              className={`filterBtn ${dayType === d ? 'active' : ''}`}
               onClick={() => setDayType(d)}
             >{d}</button>
           ))}
@@ -137,19 +137,19 @@ export default function HourlyPattern() {
 
       {/* ── 골든타임 카드 ──────────────────────────────────── */}
       {goldenTime.length > 0 && (
-        <div className={styles.goldenRow}>
-          <div className={styles.goldenLabel}>
+        <div className="goldenRow">
+          <div className="goldenLabel">
             <Zap size={13} />
             <span>골든 타임 (혼잡도 TOP 3)</span>
           </div>
           {goldenTime.map((g, i) => (
-            <div key={g['시간대']} className={styles.goldenCard}>
-              <span className={styles.goldenRank}>{peakIcon(i)}</span>
-              <span className={styles.goldenTime}>{g['시간대']}</span>
-              <span className={styles.goldenValue}>
+            <div key={g['시간대']} className="goldenCard">
+              <span className="goldenRank">{peakIcon(i)}</span>
+              <span className="goldenTime">{g['시간대']}</span>
+              <span className="goldenValue">
                 <Users size={11} /> {Math.round(g['총인원']).toLocaleString()}명
               </span>
-              <span className={styles.goldenCongestion}>
+              <span className="goldenCongestion">
                 혼잡도 {g['최대혼잡도']}
               </span>
             </div>
@@ -158,25 +158,25 @@ export default function HourlyPattern() {
       )}
 
       {/* ── 메인 차트 ──────────────────────────────────────── */}
-      <div className={styles.chartCard}>
-        <div className={styles.cardHeader}>
+      <div className="chartCard">
+        <div className="cardHeader">
           <Clock size={14} />
-          <span className={styles.cardTitle}>
+          <span className="cardTitle">
             {station} · {year}년 · {dayType} — 시간대별 평균 승하차 인원
           </span>
-          <span className={styles.cardNote}>혼잡도 지수 = (시간대 평균 / 전체 시간대 평균) × 100</span>
+          <span className="cardNote">혼잡도 지수 = (시간대 평균 / 전체 시간대 평균) × 100</span>
         </div>
 
-        <div className={styles.chartArea} style={{ position: 'relative' }}>
+        <div className="chartArea" style={{ position: 'relative' }}>
           {loading && <LoadingOverlay message="데이터 집계 중..." />}
           {error && (
-            <div className={styles.errorBox}>
+            <div className="errorBox">
               <AlertCircle size={16} />
               <span>{error}</span>
             </div>
           )}
           {!loading && !error && chartData.length === 0 && (
-            <div className={styles.empty}>조회된 데이터가 없습니다.</div>
+            <div className="empty">조회된 데이터가 없습니다.</div>
           )}
           {!loading && chartData.length > 0 && (
             <ResponsiveLine
@@ -244,3 +244,5 @@ export default function HourlyPattern() {
     </div>
   );
 }
+
+export default HourlyPattern;
