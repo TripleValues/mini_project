@@ -3,6 +3,7 @@ from pyspark.sql.functions import trim, col
 from fastapi import FastAPI
 from sqlalchemy import create_engine, text
 from settings import settings
+from fastapi.middleware.cors import CORSMiddleware
 
 import pages.spark_service, \
   pages.seoul_data, \
@@ -13,6 +14,19 @@ import pages.spark_service, \
 import pandas as pd
 import os
 import traceback
+
+origins = [ settings.react_url, "http://localhost:5173" ]
+
+app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
 
 app = FastAPI()
 
