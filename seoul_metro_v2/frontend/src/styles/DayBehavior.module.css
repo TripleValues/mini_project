@@ -29,7 +29,6 @@
   letter-spacing: 0.3px;
   cursor: pointer;
 }
-
 .filterBtn:hover { background: var(--bg-hover); color: var(--text-primary); }
 .filterBtn.active { background: var(--accent); color: #fff; }
 .filterBtn.activeGreen { background: var(--accent-green); color: #080c12; font-weight: 600; }
@@ -48,7 +47,6 @@
   gap: 18px;
   transition: grid-template-columns 0.3s ease;
 }
-
 .layout.withSidebar {
   grid-template-columns: 1fr 320px;
 }
@@ -58,8 +56,11 @@
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  overflow: hidden;
+  /* overflow: hidden을 제거 → Nivo가 margin 영역에 그리는 축 레이블이 잘리지 않도록 */
+  /* 대신 border-radius는 헤더/바닥에서만 적용 */
   min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .cardHeader {
@@ -70,6 +71,8 @@
   border-bottom: 1px solid var(--border);
   color: var(--text-secondary);
   background: var(--bg-elevated);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0; /* 상단만 둥글게 */
+  flex-shrink: 0;
 }
 
 .cardTitle {
@@ -86,8 +89,12 @@
 }
 
 .chartArea {
-  height: 460px;
-  padding: 16px 8px 8px;
+  /* padding 제거: Nivo가 SVG 내부 margin으로 자체 여백을 처리함
+     padding이 있으면 부모 크기 계산이 틀어져 레이블이 잘림 */
+  padding: 0;
+  height: 500px;
+  width: 100%;
+  position: relative;
 }
 
 .errorBox {
@@ -157,9 +164,9 @@
   color: var(--text-muted);
   padding: 2px;
   border-radius: 4px;
+  cursor: pointer;
   transition: color 0.15s, background 0.15s;
 }
-
 .closeBtn:hover { color: var(--text-primary); background: var(--bg-hover); }
 
 .modeToggle {
@@ -183,8 +190,8 @@
   border-radius: var(--radius);
   transition: all 0.15s;
   font-family: inherit;
+  cursor: pointer;
 }
-
 .modeBtn:hover { border-color: var(--accent); color: var(--text-primary); }
 .modeBtn.modeActive { background: var(--accent-dim); border-color: var(--accent); color: var(--text-accent); }
 
@@ -203,7 +210,6 @@
   border-radius: var(--radius);
   transition: background 0.15s;
 }
-
 .rankItem:hover { background: var(--bg-hover); }
 
 .rankNo {

@@ -47,12 +47,12 @@ def get_time_pattern(spark, year: str, station_name: str, day_type: str):
   
   # ――――― [ 필요한 컬럼 선택 및 정렬 ] ―――――――――――――――――――――――――――――――――――――――――――――――――――
   result_sdf = refined_sdf.select(
-    F.col("시간대"),
+    F.col("시간대").alias("x"),
     F.col("역번호"),
     F.col("구분"),
-    F.col("평균인원").cast("float"),
+    F.col("평균인원").cast("float").alias("y"),
     F.col("혼잡도지수").cast("float")
-  ).orderBy("시간대")
+  ).orderBy("x")
   # .orderBy(F.substring(F.col("시간대"), 1, 2).cast("int"))
   # .orderBy("시간대")
 
@@ -109,7 +109,23 @@ def get_total(item):
 # 3. API 엔드포인트
 # ===================================================================================
 
-# ――――― [ (1) 승하차 피크 타임 패턴 비교 (다중 선 차트용) ] ―――――――――――――――――――――――――――――――
+# # ――――― [ (1-1) 승하차 피크 타임 패턴 비교 (라인 차트용) >>> 폐기 ] ―――――――――――――――――――――
+# @router.get("/metro_03_1", summary="시간대별 승하차 패턴")
+# async def read_time_pattern(year: str, station_name: str, day_type: str = "평일"):
+#   from main import spark
+#   if not spark:
+#     return {"status" : False, "message": "Spark 세션 초기화 실패"}
+#   try:
+#     data = get_time_pattern(spark, year, station_name, day_type)
+#     return {
+#       "status": True,
+#       "result": data
+#     }
+#   except Exception as e:
+#     return {"status": False, "error": str(e)}
+
+
+# ――――― [ (1-2) 승하차 피크 타임 패턴 비교 (다중 선 차트용) ] ―――――――――――――――――――――――――――――――
 @router.get("/metro_03_1", summary="승차 vs 하차 시간대별 패턴 비교")
 async def read_time_pattern(year: str, station_name: str, day_type: str):
   from main import spark
@@ -120,7 +136,7 @@ async def read_time_pattern(year: str, station_name: str, day_type: str):
   
   # 'get_time_pattern' 호출
   try:
-    # 함수로부터 List[dict] 데이터 받음
+    # 함수로부터 List[dict] 데이터 받음 (DB 원본 리스트)
     raw_data = get_time_pattern(spark, year, station_name, day_type)
 
     if not raw_data:
@@ -131,14 +147,15 @@ async def read_time_pattern(year: str, station_name: str, day_type: str):
     for g in ["승차", "하차"]:
       # 해당 구분에 맞는 데이터 필터링 후 data 배열 만들기
       points = [
-        {"x": d['시간대'], "y": round(d['평균인원'], 2)}
+        {"x": d['x'], "y": round(d['y'], 2), "혼잡도지수": d.get("혼잡도지수", 0)}
         for d in raw_data if d["구분"] == g
       ]
-      chart_data.append({
-        "id": g,
-        "station_code": raw_data[0]["역번호"],
-        "data": points
-      })
+      if points:
+        chart_data.append({
+          "id": g,
+          "station_code": raw_data[0].get("역번호", ""),
+          "data": points
+        })
       
     return {
       "status" : True,
