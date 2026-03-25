@@ -1,8 +1,8 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink } from 'react-router-dom'
 import {
   TrendingUp, BarChart2, Clock, Grid, Calendar, Train
-} from 'lucide-react';
-import styles from './Nav.module.css';
+} from 'lucide-react'
+import '@styles/Nav.css'
 
 const MENU = [
   { path: '/yearly',   label: '연도별 추이',       sub: 'METRO-01', Icon: TrendingUp  },
@@ -12,43 +12,45 @@ const MENU = [
   { path: '/seasonal', label: '월별 성수기 분석',   sub: 'METRO-05', Icon: Calendar    },
 ];
 
-export default function Nav() {
+const Nav = () => {
   return (
-    <nav className={styles.nav}>
-      <div className={styles.logo}>
-        <Train size={20} className={styles.logoIcon} />
+    <nav className="nav">
+      <div className="logo">
+        <Train size={20} className="logoIcon" />
         <div>
-          <span className={styles.logoMain}>SEOUL</span>
-          <span className={styles.logoSub}>METRO ANALYTICS</span>
+          <span className="logoMain">SEOUL</span>
+          <span className="logoSub">METRO ANALYTICS</span>
         </div>
       </div>
 
-      <div className={styles.divider} />
+      <div className="divider" />
 
-      <ul className={styles.menu}>
+      <ul className="menu">
         {MENU.map(({ path, label, sub, Icon }) => (
           <li key={path}>
             <NavLink
               to={path}
               className={({ isActive }) =>
-                `${styles.item} ${isActive ? styles.active : ''}`
+                `"item" ${isActive ? "active" : ""}`
               }
             >
-              <Icon size={16} className={styles.icon} />
-              <div className={styles.labels}>
-                <span className={styles.labelMain}>{label}</span>
-                <span className={styles.labelSub}>{sub}</span>
+              <Icon size={16} className="icon" />
+              <div className="labels">
+                <span className="labelMain">{label}</span>
+                <span className="labelSub">{sub}</span>
               </div>
-              <div className={styles.activeLine} />
+              <div className="activeLine" />
             </NavLink>
           </li>
         ))}
       </ul>
 
-      <div className={styles.footer}>
-        <span className={styles.footerText}>Seoul Metro Open Data</span>
-        <span className={styles.footerText}>2008 – 2021</span>
+      <div className="footer">
+        <span className="footerText">Seoul Metro Open Data</span>
+        <span className="footerText">2008 – 2021</span>
       </div>
     </nav>
   );
 }
+
+export default Nav;

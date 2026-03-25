@@ -27,11 +27,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-@app.get("/hello")
-def read_hello():
-  return {"status": True, "result": ["공유는 해드림"]}
-
 spark = None
 # mariadb_engine = create_engine(settings.mariadb_url)
 mariadb_engine = create_engine(settings.mariadb_url, connect_args={"local_infile": 1})
