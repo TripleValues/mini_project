@@ -1,11 +1,17 @@
+/* Header.css */
 .header {
   position: fixed;
   top: 0;
-  left: var(--nav-w);
+  /* ✅ 사이드바 너비만큼 정확히 띄웁니다 */
+  left: var(--nav-w); 
   right: 0;
   height: var(--header-h);
   background: var(--bg-surface);
+  
+  /* ✅ 보더 두께가 너비에 영향을 주지 않도록 설정 */
+  box-sizing: border-box; 
   border-bottom: 1px solid var(--border);
+  
   display: flex;
   align-items: center;
   justify-content: space-between;

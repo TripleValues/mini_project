@@ -1,21 +1,31 @@
+/* Nav.module.css */
 .nav {
   width: var(--nav-w);
   min-height: 100vh;
   background: var(--bg-surface);
+  
+  /* ✅ 보더 두께를 너비에 포함시켜 헤더의 left 값과 일치시킵니다 */
+  box-sizing: border-box; 
   border-right: 1px solid var(--border);
+  
   display: flex;
   flex-direction: column;
   position: fixed;
-  top: 0; left: 0;
+  top: 0; 
+  left: 0;
   z-index: 100;
-  padding: 0 0 24px;
+  padding: 0; /* 내부 요소와의 간격을 위해 하단 패딩 제거 혹은 조정 */
 }
 
+/* 로고 하단 선이 헤더의 하단 선과 높이가 같아야 한다면 이 부분 조정 */
 .logo {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 20px 20px 18px;
+  /* ✅ 로고 높이 + 패딩의 합이 헤더 높이(var(--header-h))와 같으면 더 깔끔합니다 */
+  height: var(--header-h); 
+  padding: 0 20px;
+  box-sizing: border-box;
   border-bottom: 1px solid var(--border);
 }
 
