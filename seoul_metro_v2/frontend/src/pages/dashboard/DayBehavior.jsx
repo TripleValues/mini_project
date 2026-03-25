@@ -3,9 +3,8 @@ import { ResponsiveHeatMap } from '@nivo/heatmap';
 import { BarChart2, List, X, AlertCircle, TrendingUp, Moon } from 'lucide-react';
 import { fetchHeatmap, fetchClickRanking } from '@utils/network.js';
 import LoadingOverlay from '@components/LoadingOverlay.jsx';
-import '@styles/DayBehavior.css';
+import styles from '@styles/DayBehavior.module.css';
 
-// ── 차트 테마 ──────────────────────────────────────────────────
 const CHART_THEME = {
   background: 'transparent',
   textColor: '#8fa3c4',
@@ -13,6 +12,7 @@ const CHART_THEME = {
   fontFamily: "'DM Sans', sans-serif",
   axis: {
     ticks: { text: { fill: '#8fa3c4', fontSize: 11 } },
+    legend: { text: { fill: '#4a6080', fontSize: 12 } },
   },
   tooltip: {
     container: {
@@ -25,45 +25,29 @@ const CHART_THEME = {
   },
 };
 
-const YEARS = [];
-for (let year = 2021; year >= 2008; year--) {
-  YEARS.push(year.toString());
-}
+const YEARS = ['2021','2020','2019','2018','2017','2016','2015'];
 const ON_OFF = ['전체','승차','하차'];
 const MODES = [
   { value: 'total', label: '전체 이용객', Icon: TrendingUp },
-  { value: 'night', label: '심야 급증', Icon: Moon },
+  { value: 'night', label: '심야 급증',   Icon: Moon },
 ];
 
-// ── 히트맵 색상 범위 ───────────────────────────────────────────
-const HEAT_COLORS = [
-  { value: 0,   color: '#0a1628' },
-  { value: 0.2, color: '#0d3060' },
-  { value: 0.4, color: '#0f4c8a' },
-  { value: 0.6, color: '#1a65b8' },
-  { value: 0.8, color: '#2980e8' },
-  { value: 1,   color: '#4da3ff' },
-];
-
-const DayBehavior = () => {
-  const [year, setYear]       = useState('2021');
-  const [onOff, setOnOff]     = useState('전체');
+export default function DayBehavior() {
+  const [year,    setYear]    = useState('2021');
+  const [onOff,   setOnOff]   = useState('전체');
   const [heatData, setHeatData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState(null);
+  const [error,   setError]   = useState(null);
 
-  // ── 클릭 사이드바 상태 ─────────────────────────────────────
-  const [sidebar, setSidebar] = useState(null); // { line, dayName }
-  const [rankData, setRankData] = useState([]);
-  const [rankMode, setRankMode] = useState('total');
+  const [sidebar,     setSidebar]     = useState(null);
+  const [rankData,    setRankData]    = useState([]);
+  const [rankMode,    setRankMode]    = useState('total');
   const [rankLoading, setRankLoading] = useState(false);
 
-  // ── 히트맵 데이터 로드 ────────────────────────────────────
   const loadHeatmap = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      // API: { result: [{ id: '2호선', data: [{x:'월요일', y:합계인원, 평균이용객수, 심야이용객수}] }] }
       const res = await fetchHeatmap(year, onOff);
       setHeatData(res?.result ?? []);
     } catch {
@@ -75,7 +59,6 @@ const DayBehavior = () => {
 
   useEffect(() => { loadHeatmap(); }, [loadHeatmap]);
 
-  // ── 클릭 → 사이드바 랭킹 로드 ────────────────────────────
   const loadRanking = useCallback(async (line, dayName, mode) => {
     setRankLoading(true);
     try {
@@ -89,7 +72,6 @@ const DayBehavior = () => {
   }, [year, onOff]);
 
   const handleCellClick = (cell) => {
-    // Nivo heatmap cell: cell.serieId = 호선(Y축), cell.data.x = 요일(X축)
     const line    = cell.serieId;
     const dayName = cell.data.x;
     setSidebar({ line, dayName });
@@ -101,82 +83,89 @@ const DayBehavior = () => {
     if (sidebar) loadRanking(sidebar.line, sidebar.dayName, mode);
   };
 
-  // ── 랭킹 최대값 (막대 너비 비율용) ─────────────────────────
+  const rankValueKey = rankMode === 'total' ? '총이용량' : '심야이용량';
   const rankMax = rankData.length > 0
-    ? Math.max(...rankData.map(r => r['총이용량'] ?? r['심야이용량'] ?? 0))
+    ? Math.max(...rankData.map(r => r[rankValueKey] ?? 0))
     : 1;
 
-  const rankValueKey = rankMode === 'total' ? '총이용량' : '심야이용량';
-
   return (
-    <div className="page">
+    <div className={styles.page}>
       {/* ── 컨트롤 바 ─────────────────────────────────────── */}
-      <div className="controls">
-        <div className="filterGroup">
+      <div className={styles.controls}>
+        <div className={styles.filterGroup}>
           {YEARS.map(y => (
             <button
               key={y}
-              className={`filterBtn ${year === y ? 'active' : ''}`}
+              className={`${styles.filterBtn} ${year === y ? styles.active : ''}`}
               onClick={() => setYear(y)}
             >{y}</button>
           ))}
         </div>
 
-        <div className="filterGroup">
+        <div className={styles.filterGroup}>
           {ON_OFF.map(o => (
             <button
               key={o}
-              className={`filterBtn ${onOff === o ? 'activeGreen' : ''}`}
+              className={`${styles.filterBtn} ${onOff === o ? styles.activeGreen : ''}`}
               onClick={() => setOnOff(o)}
             >{o}</button>
           ))}
         </div>
 
-        <span className="hint">
+        <span className={styles.hint}>
           셀 클릭 시 해당 노선·요일의 역별 랭킹을 확인할 수 있습니다
         </span>
       </div>
 
       {/* ── 본문 레이아웃 ──────────────────────────────────── */}
-      <div className={`"layout" ${sidebar ? "withSidebar" : ""}`}>
+      <div className={`${styles.layout} ${sidebar ? styles.withSidebar : ''}`}>
+
         {/* ── 히트맵 카드 ─────────────────────────────────── */}
-        <div className="chartCard">
-          <div className="cardHeader">
+        <div className={styles.chartCard}>
+          <div className={styles.cardHeader}>
             <BarChart2 size={14} />
-            <span className="cardTitle">
+            <span className={styles.cardTitle}>
               {year}년 · {onOff} — 호선별 요일 이용객 히트맵
             </span>
-            <span className="cardNote">Y축: 호선 | X축: 요일 | 색상: 합계 인원</span>
+            <span className={styles.cardNote}>Y축: 호선 | X축: 요일 | 색상: 합계 인원</span>
           </div>
 
-          <div className="chartArea" style={{ position: 'relative' }}>
+          <div className={styles.chartArea}>
             {loading && <LoadingOverlay message="히트맵 집계 중..." />}
-            {error && (
-              <div className="errorBox"><AlertCircle size={16} /><span>{error}</span></div>
+            {!loading && error && (
+              <div className={styles.errorBox}><AlertCircle size={16} /><span>{error}</span></div>
             )}
             {!loading && !error && heatData.length === 0 && (
-              <div className="empty">조회된 데이터가 없습니다.</div>
+              <div className={styles.empty}>조회된 데이터가 없습니다.</div>
             )}
-            {!loading && heatData.length > 0 && (
+            {!loading && !error && heatData.length > 0 && (
               <ResponsiveHeatMap
                 data={heatData}
                 theme={CHART_THEME}
-                margin={{ top: 16, right: 30, bottom: 60, left: 80 }}
-                // Nivo HeatMap: data[].id = Y축 (호선), data[].data[].x = X축 (요일)
+                /**
+                 * margin 수정 포인트
+                 * left  : 호선명(최대 "경의중앙선" 6자) + tickPadding 확보 → 100
+                 * bottom : 요일 레이블(-15°) + legend 텍스트 공간        → 70
+                 * right  : 여유                                           → 20
+                 * top    : 여유                                           → 20
+                 */
+                margin={{ top: 20, right: 20, bottom: 70, left: 100 }}
                 valueFormat=">-.2s"
+                axisTop={null}
+                axisRight={null}
                 axisBottom={{
                   tickSize: 4,
                   tickPadding: 8,
-                  tickRotation: -15,
+                  tickRotation: -20,
                   legend: '요일',
-                  legendOffset: 50,
+                  legendOffset: 58,        /* bottom margin(70) 이내로 설정 */
                   legendPosition: 'middle',
                 }}
                 axisLeft={{
                   tickSize: 4,
-                  tickPadding: 8,
+                  tickPadding: 10,
                   legend: '호선',
-                  legendOffset: -68,
+                  legendOffset: -88,       /* -(left margin - 12) */
                   legendPosition: 'middle',
                 }}
                 colors={{
@@ -195,10 +184,10 @@ const DayBehavior = () => {
                 cellHoverOthersOpacity={0.5}
                 tooltip={({ cell }) => (
                   <div style={{
-                    background:'#141b2d', border:'1px solid #1f2d47',
-                    borderRadius:6, padding:'10px 14px', fontSize:12, color:'#e8f0fe'
+                    background: '#141b2d', border: '1px solid #1f2d47',
+                    borderRadius: 6, padding: '10px 14px', fontSize: 12, color: '#e8f0fe',
                   }}>
-                    <div style={{ fontWeight:700, marginBottom:4 }}>
+                    <div style={{ fontWeight: 700, marginBottom: 4 }}>
                       {cell.serieId} · {cell.data.x}
                     </div>
                     <div>합계 인원: <strong>{Math.round(cell.value).toLocaleString()}명</strong></div>
@@ -208,7 +197,9 @@ const DayBehavior = () => {
                     {cell.data['심야이용객수'] != null && (
                       <div>심야 이용객: {Math.round(cell.data['심야이용객수']).toLocaleString()}명</div>
                     )}
-                    <div style={{ color:'#4a6080', marginTop:4, fontSize:10 }}>클릭하여 역별 랭킹 보기</div>
+                    <div style={{ color: '#4a6080', marginTop: 4, fontSize: 10 }}>
+                      클릭하여 역별 랭킹 보기
+                    </div>
                   </div>
                 )}
               />
@@ -218,26 +209,26 @@ const DayBehavior = () => {
 
         {/* ── 사이드바 랭킹 ──────────────────────────────── */}
         {sidebar && (
-          <div className="sidebar">
-            <div className="sideHeader">
+          <div className={styles.sidebar}>
+            <div className={styles.sideHeader}>
               <div>
-                <span className="sideTitle">
+                <span className={styles.sideTitle}>
                   <List size={13} /> 역별 이용객 랭킹
                 </span>
-                <span className="sideSub">
+                <span className={styles.sideSub}>
                   {sidebar.line} · {sidebar.dayName} · TOP 20
                 </span>
               </div>
-              <button className="closeBtn" onClick={() => setSidebar(null)}>
+              <button className={styles.closeBtn} onClick={() => setSidebar(null)}>
                 <X size={14} />
               </button>
             </div>
 
-            <div className="modeToggle">
+            <div className={styles.modeToggle}>
               {MODES.map(({ value, label, Icon }) => (
                 <button
                   key={value}
-                  className={`"modeBtn" ${rankMode === value ? "modeActive" : ""}`}
+                  className={`${styles.modeBtn} ${rankMode === value ? styles.modeActive : ''}`}
                   onClick={() => handleModeChange(value)}
                 >
                   <Icon size={11} /> {label}
@@ -245,28 +236,28 @@ const DayBehavior = () => {
               ))}
             </div>
 
-            <div className="rankList" style={{ position: 'relative' }}>
+            <div className={styles.rankList} style={{ position: 'relative' }}>
               {rankLoading && <LoadingOverlay message="랭킹 집계 중..." />}
               {!rankLoading && rankData.length === 0 && (
-                <div className="empty">데이터가 없습니다.</div>
+                <div className={styles.empty}>데이터가 없습니다.</div>
               )}
               {!rankLoading && rankData.map((r, i) => {
                 const val = r[rankValueKey] ?? 0;
                 const pct = rankMax > 0 ? (val / rankMax) * 100 : 0;
-                const구분 = r['구분'];
+                const 구분 = r['구분'];
                 return (
-                  <div key={`${r['역명']}-${구분}-${i}`} className="rankItem">
-                    <span className="rankNo">{i + 1}</span>
-                    <div className="rankInfo">
-                      <div className="rankName">
+                  <div key={`${r['역명']}-${구분}-${i}`} className={styles.rankItem}>
+                    <span className={styles.rankNo}>{i + 1}</span>
+                    <div className={styles.rankInfo}>
+                      <div className={styles.rankName}>
                         {r['역명']}
-                        {구분 && <span className="rankTag">{구분}</span>}
+                        {구분 && <span className={styles.rankTag}>{구분}</span>}
                       </div>
-                      <div className="rankBar">
-                        <div className="rankBarFill" style={{ width: `${pct}%` }} />
+                      <div className={styles.rankBar}>
+                        <div className={styles.rankBarFill} style={{ width: `${pct}%` }} />
                       </div>
                     </div>
-                    <span className="rankVal">
+                    <span className={styles.rankVal}>
                       {Math.round(val).toLocaleString()}
                     </span>
                   </div>
@@ -279,5 +270,3 @@ const DayBehavior = () => {
     </div>
   );
 }
-
-export default DayBehavior;

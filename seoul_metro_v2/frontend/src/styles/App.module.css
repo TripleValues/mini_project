@@ -14,7 +14,10 @@
 .content {
   margin-top: var(--header-h);
   flex: 1;
-  padding: 28px;
+  /* 상단 28px → 20px: 헤더 바로 아래 컨트롤 바가 잘리지 않도록 */
+  padding: 20px 24px 32px;
   background: var(--bg-base);
   min-height: calc(100vh - var(--header-h));
+  box-sizing: border-box;
+  overflow-y: auto;
 }
