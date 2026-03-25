@@ -1,6 +1,6 @@
 import { useLocation } from 'react-router-dom';
 import { Database, Activity } from 'lucide-react';
-import styles from './Header.module.css';
+import '@styles/Header.css';
 
 const PAGE_META = {
   '/yearly':   { title: '연도별 이용객 추이 분석', desc: '2008–2021 서울 지하철 전체 성장 흐름 파악' },
@@ -10,22 +10,22 @@ const PAGE_META = {
   '/seasonal': { title: '월별 성수기/비수기 지수',   desc: '계절·공휴일 영향 분석 · 연간 최대 이용 월 포착' },
 };
 
-export default function Header() {
+const Header = () => {
   const { pathname } = useLocation();
   const meta = PAGE_META[pathname] || { title: 'Seoul Metro Analytics', desc: '서울시 지하철 승하차 데이터 시각화 대시보드' };
 
   return (
-    <header className={styles.header}>
-      <div className={styles.left}>
-        <h1 className={styles.title}>{meta.title}</h1>
-        <p className={styles.desc}>{meta.desc}</p>
+    <header className="header">
+      <div className="left">
+        <h1 className="title">{meta.title}</h1>
+        <p className="desc">{meta.desc}</p>
       </div>
-      <div className={styles.right}>
-        <div className={styles.badge}>
+      <div className="right">
+        <div className="badge">
           <Database size={12} />
           <span>db_metro</span>
         </div>
-        <div className={styles.badge}>
+        <div className="badge">
           <Activity size={12} />
           <span>LIVE</span>
         </div>
@@ -33,3 +33,5 @@ export default function Header() {
     </header>
   );
 }
+
+export default Header;
