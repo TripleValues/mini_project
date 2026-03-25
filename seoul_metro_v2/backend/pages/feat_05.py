@@ -100,7 +100,7 @@ def get_gr_data(spark, year1:int, year2:int):
 # feat-05 특정연도와 특정연도의 월별 총 이용객 증감률 데이터 가져오기
 # ============================================================
 
-@router.post("/metro_05_01")
+@router.post("/metro_05_1")
 async def get_gr_metro_data(year1:int, year2:int):
   from main import spark
 
