@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ResponsiveLine } from '@nivo/line';
 import { Search, Clock, Zap, Users, AlertCircle } from 'lucide-react';
-import { fetchTimePattern, fetchGoldenTime } from '../../utils/network.js';
+// import { fetchTimePattern, fetchGoldenTime } from '../../utils/network.js';
 import LoadingOverlay from '../../components/LoadingOverlay.jsx';
 import styles from '@styles/HourlyPattern.module.css';
 

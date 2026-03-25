@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ResponsiveHeatMap } from '@nivo/heatmap';
 import { BarChart2, List, X, AlertCircle, TrendingUp, Moon } from 'lucide-react';
-import { fetchHeatmap, fetchClickRanking } from '../../utils/network.js';
+// import { fetchHeatmap, fetchClickRanking } from '../../utils/network.js';
 import LoadingOverlay from '../../components/LoadingOverlay.jsx';
 import styles from '@styles/DayBehavior.module.css';
 

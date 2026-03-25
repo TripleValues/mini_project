@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import axios from 'axios';
+import {api} from '@utils/network.js';
 import { ResponsiveLine } from '@nivo/line';
 import { TrendingUp, Loader2, Users, Activity, Scale, ChevronLeft } from 'lucide-react';
 import styles from '@styles/Placeholder.module.css';
@@ -15,7 +15,7 @@ export default function YearlyTrend() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`http://localhost:8000/feat_01/metro_01_total`, {
+      const response = await api.get(`/feat_01/metro_01_total`, {
         params: { type: selectedType }
       });
       if (response.data.status === "success") {

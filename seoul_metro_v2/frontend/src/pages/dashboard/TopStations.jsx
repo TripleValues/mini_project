@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import axios from 'axios';
+import {api} from '@utils/network.js';
 import { ResponsiveBar } from '@nivo/bar';
 import { BarChart2, Loader2, Award, Zap, Calendar, Search } from 'lucide-react';
 import styles from '@styles/Placeholder.module.css';
@@ -33,10 +33,10 @@ export default function TopStations() {
       const { topN, type, date } = appliedFilters;
       
       const [chartRes, kpiRes] = await Promise.all([
-        axios.get(`http://localhost:8000/feat_02/metro_02_01`, {
+        api.get(`/feat_02/metro_02_01`, {
           params: { top_n: topN, type, target_year: date.year, target_month: date.month, target_day: date.day }
         }),
-        axios.get(`http://localhost:8000/feat_02/metro_02_02`, {
+        api.get(`/feat_02/metro_02_02`, {
           params: { type, target_year: date.year, target_month: date.month, target_day: date.day }
         })
       ]);
