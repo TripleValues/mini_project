@@ -28,6 +28,8 @@ class Settings(BaseSettings):
   jdbc_url: str
   
   file_dir: str
+
+  react_url: str
   
   # 안씀
   hadoop_path: str
