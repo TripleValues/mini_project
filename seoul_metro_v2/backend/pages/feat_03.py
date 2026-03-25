@@ -53,6 +53,8 @@ def get_time_pattern(spark, year: str, station_name: str, day_type: str):
     F.col("평균인원").cast("float"),
     F.col("혼잡도지수").cast("float")
   ).orderBy("시간대")
+  # .orderBy(F.substring(F.col("시간대"), 1, 2).cast("int"))
+  # .orderBy("시간대")
 
   # ――――― [ Pandas 변환 & 결과 return ] ――――――――――――――――――――――――――――――――――――――――――――――
   pdf = result_sdf.toPandas()
@@ -96,7 +98,15 @@ def get_time_pattern(spark, year: str, station_name: str, day_type: str):
 
 
 # ===================================================================================
-# 2. API 엔드포인트
+# 2. 정렬 보조 함수
+# ===================================================================================
+
+def get_total(item):
+   return item["총인원"]
+
+
+# ===================================================================================
+# 3. API 엔드포인트
 # ===================================================================================
 
 # ――――― [ (1) 승하차 피크 타임 패턴 비교 (다중 선 차트용) ] ―――――――――――――――――――――――――――――――
@@ -104,11 +114,11 @@ def get_time_pattern(spark, year: str, station_name: str, day_type: str):
 async def read_time_pattern(year: str, station_name: str, day_type: str):
   from main import spark
 
-  # ――――― [ Spark 세션 체크 ] ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+  # Spark 세션 체크
   if not spark:
     return {"status" : False, "message": "Spark 세션 초기화 실패"}
   
-  # ――――― [ 'get_time_pattern' 호출 ] ―――――――――――――――――――――――――――――――――――――――――――――――
+  # 'get_time_pattern' 호출
   try:
     # 함수로부터 List[dict] 데이터 받음
     raw_data = get_time_pattern(spark, year, station_name, day_type)
@@ -121,7 +131,7 @@ async def read_time_pattern(year: str, station_name: str, day_type: str):
     for g in ["승차", "하차"]:
       # 해당 구분에 맞는 데이터 필터링 후 data 배열 만들기
       points = [
-        {"x": f"{int(d['시간대'])}시", "y": d['평균인원']}
+        {"시간대": d['시간대'], "평균인원": round(d['평균인원'], 2)}
         for d in raw_data if d["구분"] == g
       ]
       chart_data.append({
@@ -155,15 +165,28 @@ async def read_golden_time(year: str, station_name: str, day_type: str):
     for d in raw_data:
       t = d["시간대"]
       if t not in time_agg:
-        time_agg[t] = {"시간대": f"{int(t)}시", "total_people": 0, "max_congestion": 0}
-      time_agg[t]["total_people"] += d["평균인원"]
-      # 혼잡도는 해당 시간대의 최대값 유지
-      if d["혼잡도지수"] > time_agg[t]["max_congestion"]:
-          time_agg[t]["max_congestion"] = d["혼잡도지수"]
+        time_agg[t] = {
+           "시간대": t, 
+           "총인원": 0, 
+           "최대혼잡도": 0
+        }
+      time_agg[t]["총인원"] += d["평균인원"]
 
-      # 합산된 데이터를 인원수 기준 내림차순 정렬 후 상위 3개 추출
-    golden_list = sorted(time_agg.values(), key=lambda x: x['total_people'], reverse=True)[:3]
-    
+      # 혼잡도 → 해당 시간대의 최대값 유지
+      if d["혼잡도지수"] > time_agg[t]["최대혼잡도"]:
+          time_agg[t]["최대혼잡도"] = d["혼잡도지수"]
+
+    # 합산된 데이터를 인원수 기준 내림차순 정렬 → 상위 3개 추출
+    all_time_list = []
+    for val in time_agg.values():
+       all_time_list.append({
+          "시간대": val["시간대"],
+          "총인원": round(val["총인원"], 2),
+          "최대혼잡도": round(val["최대혼잡도"], 2)
+       })
+    sorted_list = sorted(all_time_list, key = get_total, reverse = True)
+    golden_list = sorted_list[:3]
+
     return {
         "status": True, 
         "result": golden_list
