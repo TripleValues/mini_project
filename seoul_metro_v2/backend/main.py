@@ -3,18 +3,34 @@ from pyspark.sql.functions import trim, col
 from fastapi import FastAPI
 from sqlalchemy import create_engine, text
 from settings import settings
-
+from fastapi.middleware.cors import CORSMiddleware
 import pages.spark_service, \
   pages.seoul_data, \
   pages.feat_01, \
   pages.feat_02, \
+  pages.feat_03, \
+  pages.feat_04, \
   pages.feat_05, \
   pages.feat_07
 import pandas as pd
 import os
 import traceback
 
-app = FastAPI()
+origins = [ settings.react_url, "http://localhost:5173" ]
+
+app = FastAPI(title="Seoul Metro API")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.get("/hello")
+def read_hello():
+  return {"status": True, "result": ["공유는 해드림"]}
 
 spark = None
 # mariadb_engine = create_engine(settings.mariadb_url)
@@ -43,6 +59,7 @@ def startup_event():
       .config("spark.shuffle.io.maxRetries", "10") \
       .config("spark.shuffle.io.retryWait", "15s") \
       .config("spark.hadoop.fs.defaultFS", "file:///") \
+      .config("spark.sql.execution.arrow.pyspark.enabled", "true") \
       .config("spark.jars.packages", "org.mariadb.jdbc:mariadb-java-client:3.5.7") \
       .getOrCreate()
     print("Spark Session Created Successfully!")
@@ -55,6 +72,7 @@ def shutdown_event():
   try:
     if spark:
       spark.stop()
+      print("Spark Session Stopped.")
   except Exception as e:
     print("Spark already stopped or failed:", e)
   # if spark:
@@ -150,11 +168,12 @@ apis = [
   pages.spark_service.router, 
   pages.seoul_data.router, 
   pages.feat_01.router, 
-  pages.feat_02.router, 
+  pages.feat_02.router,
+  pages.feat_03.router,
+  pages.feat_04.router, 
   pages.feat_05.router, 
   pages.feat_07.router
 ]
-
 for router in apis:
   app.include_router(router)
   
