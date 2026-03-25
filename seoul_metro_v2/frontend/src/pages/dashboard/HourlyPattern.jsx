@@ -40,7 +40,10 @@ const CHART_THEME = {
   },
 };
 
-const YEARS = ['2021','2020','2019','2018','2017','2016','2015'];
+const YEARS = [];
+for (let year = 2021; year >= 2008; year--) {
+  YEARS.push(year.toString())
+}
 
 export default function HourlyPattern() {
   const [year, setYear] = useState('2021');

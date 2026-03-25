@@ -131,7 +131,7 @@ async def read_time_pattern(year: str, station_name: str, day_type: str):
     for g in ["승차", "하차"]:
       # 해당 구분에 맞는 데이터 필터링 후 data 배열 만들기
       points = [
-        {"시간대": d['시간대'], "평균인원": round(d['평균인원'], 2)}
+        {"x": d['시간대'], "y": round(d['평균인원'], 2)}
         for d in raw_data if d["구분"] == g
       ]
       chart_data.append({
