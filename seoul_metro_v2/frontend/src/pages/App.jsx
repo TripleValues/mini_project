@@ -1,39 +1,32 @@
-import "bootstrap/dist/css/bootstrap.min.css";
-import "bootstrap/dist/js/bootstrap.bundle.min.js";
-import { BrowserRouter, Routes, Route } from "react-router";
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import Nav from '../components/Nav.jsx';
+import Header from '../components/Header.jsx';
+import YearlyTrend   from './dashboard/YearlyTrend.jsx';
+import TopStations   from './dashboard/TopStations.jsx';
+import HourlyPattern from './dashboard/HourlyPattern.jsx';
+import DayBehavior   from './dashboard/DayBehavior.jsx';
+import Seasonality   from './dashboard/Seasonality.jsx';
+import styles from './App.module.css';
 
-
-const Home = () => {
+export default function App() {
   return (
-    <div className="text-center">
-      <h1>메인 화면입니다.</h1>
-    </div>
-  )
+    <BrowserRouter>
+      <div className={styles.shell}>
+        <Nav />
+        <div className={styles.main}>
+          <Header />
+          <main className={styles.content}>
+            <Routes>
+              <Route path="/" element={<Navigate to="/behavior" replace />} />
+              <Route path="/yearly"   element={<YearlyTrend />} />
+              <Route path="/stations" element={<TopStations />} />
+              <Route path="/hourly"   element={<HourlyPattern />} />
+              <Route path="/behavior" element={<DayBehavior />} />
+              <Route path="/seasonal" element={<Seasonality />} />
+            </Routes>
+          </main>
+        </div>
+      </div>
+    </BrowserRouter>
+  );
 }
-
-const NotFound = () => {
-  return (
-    <div className="text-center">
-      <h1>404</h1>
-      <p>페이지를 찾을 수 없습니다.</p>
-    </div>
-  )
-}
-
-const App = () => {
-  const paths = [
-    {path: "/", element: <Home />},
-    {path: "*", element: <NotFound />},
-  ]
-  return (
-    <>
-      <BrowserRouter>
-        <Routes>
-          { paths?.map((v, i) => <Route key={i} path={v.path} element={v.element} />) }
-        </Routes>
-      </BrowserRouter>
-    </>
-  )
-}
-
-export default App

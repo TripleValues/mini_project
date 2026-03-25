@@ -1,10 +1,16 @@
 import logging
 from fastapi import APIRouter, HTTPException
 from pyspark.sql import SparkSession
+import pyspark.sql.functions as F
 from pyspark.sql.functions import col, year, month, sum as _sum, regexp_replace, to_date
+from pyspark.sql import Window
 from sqlalchemy import create_engine, text
 import pandas as pd # 결과 처리를 위해 추가
 from settings import settings
+
+
+def get_spark():
+    return SparkSession.builder.getOrCreate()
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
@@ -141,26 +147,263 @@ def run_spark_feat01():
         logger.error(f"❌ 작업 중 오류 발생: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
     
-@router.get("/metro_01")
-def get_metro_summary():
+# @router.get("/metro_01_01")
+# def get_metro_chart_data(type: str = "전체", year: int = None): # year 파라미터 추가
+#     try:
+#         spark = get_spark()
+#         df = spark.read.format("jdbc") \
+#             .option("url", settings.jdbc_url) \
+#             .option("dbtable", "feat_01") \
+#             .option("user", settings.my_user) \
+#             .option("password", settings.my_pwd) \
+#             .option("driver", "org.mariadb.jdbc.Driver") \
+#             .load()
+
+#         # 1. Drill-down을 위한 필터링 (사용자가 연도를 클릭했을 때)
+#         if year:
+#             df = df.filter(col("년도") == year)
+
+#         # 2. 구분 필터 (승차/하차/전체)
+#         if type == "승차":
+#             df = df.withColumn("인원", col("승차인원합계"))
+#         elif type == "하차":
+#             df = df.withColumn("인원", col("하차인원합계"))
+#         else:
+#             df = df.withColumn("인원", col("승차인원합계") + col("하차인원합계"))
+
+#         # 3. 데이터 가공 및 정렬
+#         # year 파라미터 유무에 따라 label 형식을 다르게 줄 수도 있습니다 (예: 2021년 내부라면 '5월'만 표시 등)
+#         chart_df = df.withColumn("label", 
+#                                  F.concat_ws("-", col("년도"), F.lpad(col("월"), 2, "0"))) \
+#                      .select("label", "인원", "년도", "월") \
+#                      .orderBy(col("년도").asc(), col("월").asc())
+
+#         result_data = [row.asDict() for row in chart_df.collect()]
+        
+#         return {
+#             "status": "success",
+#             "current_view": "yearly_detail" if year else "overall_trend",
+#             "selected_year": year,
+#             "data": result_data
+#         }
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+         
+# # [KPI 1] 연간 총 이용객 수
+# @router.get("/metro_01_02")
+# def get_annual_total(year: int = None):
+#     try:
+#         spark = get_spark()
+        
+#         # JDBC 로드 (main에서 설정한 JAR 사용)
+#         df = spark.read.format("jdbc") \
+#             .option("url", settings.jdbc_url) \
+#             .option("dbtable", "feat_01") \
+#             .option("user", settings.my_user) \
+#             .option("password", settings.my_pwd) \
+#             .option("driver", "org.mariadb.jdbc.Driver") \
+#             .load()
+
+#         if year:
+#             df = df.filter(col("년도") == year)
+
+#         result_df = df.withColumn("total", col("승차인원합계") + col("하차인원합계")) \
+#                       .groupBy("년도") \
+#                       .agg(_sum("total").alias("annual_total")) \
+#                       .orderBy(col("년도").desc())
+
+#         # JSON 변환을 위해 collect()
+#         result = [row.asDict() for row in result_df.collect()]
+#         return {"status": "success", "data": result}
+#     except Exception as e:
+#         logger.error(f"Error in metro_01_02: {str(e)}")
+#         raise HTTPException(status_code=500, detail=str(e))
+
+# # [KPI 2] 연간 성장률 (전년 대비)
+# @router.get("/metro_01_03")
+# def get_growth_rate(year: int = None):
+#     try:
+#         spark = get_spark()
+#         df = spark.read.format("jdbc") \
+#             .option("url", settings.jdbc_url) \
+#             .option("dbtable", "feat_01") \
+#             .option("user", settings.my_user) \
+#             .option("password", settings.my_pwd) \
+#             .option("driver", "org.mariadb.jdbc.Driver") \
+#             .load()
+
+#         # 1. 윈도우 설정: 월별 파티션, 연도순 정렬
+#         window_spec = Window.partitionBy("월").orderBy("년도")
+        
+#         # 2. 전년 대비 성장률 및 데이터 가공 (전체 대상 계산)
+#         processed_df = df.withColumn("total", col("승차인원합계") + col("하차인원합계")) \
+#                          .withColumn("prev_total", F.lag("total", 1).over(window_spec)) \
+#                          .withColumn("growth_rate", 
+#                                      F.round(((col("total") - col("prev_total")) / 
+#                                               F.when(col("prev_total") == 0, 1).otherwise(col("prev_total"))) * 100, 2)) \
+#                          .na.fill(0, ["growth_rate", "prev_total"])
+
+#         # 3. 필터링 로직: 선택한 연도와 그 1년 전 연도까지 포함
+#         if year:
+#             # 선택 연도(Year)와 직전 연도(Year - 1)를 모두 가져옴
+#             processed_df = processed_df.filter((col("년도") == year) | (col("년도") == year - 1))
+
+#         # 4. 최종 데이터 정렬 (리액트 차트 시각화를 위해 연도/월 순차 정렬)
+#         result_df = processed_df.select("년도", "월", "total", "prev_total", "growth_rate") \
+#                                 .orderBy(col("년도").asc(), col("월").asc())
+
+#         # 5. JSON 변환
+#         result = [row.asDict() for row in result_df.collect()]
+        
+#         return {
+#             "status": "success",
+#             "target_year": year,
+#             "compare_year": year - 1 if year else None,
+#             "data": result,
+#             "total_count": len(result)
+#         }
+#     except Exception as e:
+#         logger.error(f"❌ 성장률 및 비교 데이터 조회 오류: {str(e)}")
+#         raise HTTPException(status_code=500, detail=str(e))
+
+
+# # [KPI 3] 승하차 비율 균형도
+# @router.get("/metro_01_04")
+# def get_balance(year: int = None, month: int = None):
+#     try:
+#         spark = get_spark()
+#         df = spark.read.format("jdbc") \
+#             .option("url", settings.jdbc_url) \
+#             .option("dbtable", "feat_01") \
+#             .option("user", settings.my_user) \
+#             .option("password", settings.my_pwd) \
+#             .option("driver", "org.mariadb.jdbc.Driver") \
+#             .load()
+
+#         # 1. 필터링
+#         if year: df = df.filter(col("년도") == year)
+#         if month: df = df.filter(col("월") == month)
+
+#         # 2. 파이 차트용 비중(%) 및 균형도 계산
+#         # 총합이 0인 경우 발생할 수 있는 에러 방지를 위해 total_sum을 먼저 계산
+#         result_df = df.withColumn("total_sum", col("승차인원합계") + col("하차인원합계")) \
+#                       .withColumn("boarding_pct", 
+#                                   F.round((col("승차인원합계") / F.when(col("total_sum") == 0, 1).otherwise(col("total_sum"))) * 100, 2)) \
+#                       .withColumn("alighting_pct", 
+#                                   F.round((col("하차인원합계") / F.when(col("total_sum") == 0, 1).otherwise(col("total_sum"))) * 100, 2)) \
+#                       .withColumn("balance_ratio", 
+#                                   F.round((col("승차인원합계") / F.when(col("하차인원합계") == 0, 1).otherwise(col("하차인원합계"))) * 100, 2)) \
+#                       .select("년도", "월", "승차인원합계", "하차인원합계", "boarding_pct", "alighting_pct", "balance_ratio") \
+#                       .orderBy(col("년도").desc(), col("월").desc())
+
+#         # 3. 결과 반환
+#         result = [row.asDict() for row in result_df.collect()]
+        
+#         return {
+#             "status": "success",
+#             "chart_type": "pie",
+#             "data": result
+#         }
+#     except Exception as e:
+#         logger.error(f"Error in metro_01_04: {str(e)}")
+#         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/metro_01_total")
+def get_metro_01_integrated_analysis(type: str = "전체", year: int = None):
+    """
+    METRO-01 통합 엔드포인트:
+    1. 월별 이용객 추세 (Main Chart)
+    2. 연간 총 이용객 (KPI 1)
+    3. 전년 대비 성장률 및 비교 데이터 (KPI 2)
+    4. 승하차 비중 및 균형도 (KPI 3)
+    """
     try:
-        # 1. DB에서 feat_01 테이블 데이터 조회 (최신 데이터순)
-        query = "SELECT 년도, 월, 승차인원합계, 하차인원합계 FROM feat_01 ORDER BY 년도 DESC, 월 DESC"
+        spark = get_spark()
         
-        with mariadb_engine.connect() as conn:
-            # pandas를 사용하면 JSON 변환이 매우 편리합니다.
-            df = pd.read_sql(query, conn)
+        # 1. 데이터 로드 (캐싱을 통해 반복 연산 속도 향상)
+        df = spark.read.format("jdbc") \
+            .option("url", settings.jdbc_url) \
+            .option("dbtable", "feat_01") \
+            .option("user", settings.my_user) \
+            .option("password", settings.my_pwd) \
+            .option("driver", "org.mariadb.jdbc.Driver") \
+            .load().cache()
+
+        # --- [데이터 가공 공통 로직] ---
+        # 기본 total 계산 (승차+하차)
+        df_base = df.withColumn("total", col("승차인원합계") + col("하차인원합계"))
+
+        # --- [1. 메인 차트 데이터: get_metro_chart_data] ---
+        chart_df = df_base
+        if year:
+            chart_df = chart_df.filter(col("년도") == year)
+        
+        # 구분(type)에 따른 인원 설정
+        if type == "승차":
+            chart_df = chart_df.withColumn("display_value", col("승차인원합계"))
+        elif type == "하차":
+            chart_df = chart_df.withColumn("display_value", col("하차인원합계"))
+        else:
+            chart_df = chart_df.withColumn("display_value", col("total"))
+
+        main_chart_data = chart_df.withColumn("label", F.concat_ws("-", col("년도"), F.lpad(col("월"), 2, "0"))) \
+            .select("label", "display_value", "년도", "월") \
+            .orderBy(col("년도").asc(), col("월").asc()) \
+            .collect()
+
+        # --- [2. KPI 1: 연간 총 이용객 수] ---
+        annual_total_df = df_base
+        if year:
+            annual_total_df = annual_total_df.filter(col("년도") == year)
+        
+        kpi_annual_total = annual_total_df.groupBy("년도") \
+            .agg(F.sum("total").alias("annual_total")) \
+            .orderBy(col("년도").desc()).collect()
+
+        # --- [3. KPI 2: 성장률 및 비교 (전년 데이터 포함)] ---
+        window_spec = Window.partitionBy("월").orderBy("년도")
+        growth_df = df_base.withColumn("prev_total", F.lag("total", 1).over(window_spec)) \
+            .withColumn("growth_rate", 
+                        F.round(((col("total") - col("prev_total")) / 
+                                 F.when(col("prev_total") == 0, 1).otherwise(col("prev_total"))) * 100, 2)) \
+            .na.fill(0, ["growth_rate", "prev_total"])
+
+        if year:
+            growth_df = growth_df.filter((col("년도") == year) | (col("년도") == year - 1))
+        
+        kpi_growth_data = growth_df.select("년도", "월", "total", "prev_total", "growth_rate") \
+            .orderBy(col("년도").asc(), col("월").asc()).collect()
+
+        # --- [4. KPI 3: 승하차 비중 및 균형도] ---
+        balance_df = df_base
+        if year:
+            balance_df = balance_df.filter(col("년도") == year)
             
-        # 2. DataFrame을 JSON(리스트 형태)으로 변환
-        # orient="records"를 사용하면 [{년도: 2024, 월: 3, ...}, ...] 형식으로 나옵니다.
-        result = df.to_dict(orient="records")
-        
+        kpi_balance_data = balance_df.withColumn("boarding_pct", 
+                                  F.round((col("승차인원합계") / F.when(col("total") == 0, 1).otherwise(col("total"))) * 100, 2)) \
+            .withColumn("alighting_pct", 
+                                  F.round((col("하차인원합계") / F.when(col("total") == 0, 1).otherwise(col("total"))) * 100, 2)) \
+            .withColumn("balance_ratio", 
+                                  F.round((col("승차인원합계") / F.when(col("하차인원합계") == 0, 1).otherwise(col("하차인원합계"))) * 100, 2)) \
+            .select("년도", "월", "boarding_pct", "alighting_pct", "balance_ratio") \
+            .orderBy(col("년도").desc(), col("월").desc()).collect()
+
+        # 5. 캐시 해제 및 최종 반환
+        df.unpersist()
+
         return {
             "status": "success",
-            "data": result,
-            "total_count": len(result)
+            "metadata": {
+                "selected_year": year,
+                "selected_type": type,
+                "view_mode": "drill-down" if year else "overall"
+            },
+            "main_chart": [row.asDict() for row in main_chart_data],
+            "kpi_total": [row.asDict() for row in kpi_annual_total],
+            "kpi_growth": [row.asDict() for row in kpi_growth_data],
+            "kpi_balance": [row.asDict() for row in kpi_balance_data]
         }
 
     except Exception as e:
-        logger.error(f"❌ 데이터 조회 중 오류 발생: {str(e)}")
-        raise HTTPException(status_code=500, detail="데이터를 불러오는데 실패했습니다.")
+        logger.error(f"❌ METRO-01 통합 조회 오류: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
