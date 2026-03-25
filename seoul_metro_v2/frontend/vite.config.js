@@ -8,8 +8,18 @@ export default defineConfig({
   base: "/",
   server: {
     host: '0.0.0.0',
-    port: 5173, // 기존 포트 유지
     allowedHosts: ['localhost', 'aiedu.tplinkdns.com'],
+  },
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      '@pages': fileURLToPath(new URL('./src/pages', import.meta.url)),
+      '@styles': fileURLToPath(new URL('./src/styles', import.meta.url)),
+      '@assets': fileURLToPath(new URL('./src/assets', import.meta.url)),
+      '@hooks': fileURLToPath(new URL('./src/hooks', import.meta.url)),
+      '@utils': fileURLToPath(new URL('./src/utils', import.meta.url)),
+      '@components': fileURLToPath(new URL('./src/components', import.meta.url)),
+    }
   },
   resolve: {
     // 첨부파일에 있던 경로 별칭(Alias) 설정
