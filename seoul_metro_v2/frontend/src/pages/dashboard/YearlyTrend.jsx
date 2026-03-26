@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { api } from '@utils/network.js';
 import { ResponsiveLine } from '@nivo/line';
 import { TrendingUp, Loader2, Users, Activity, Scale, ChevronLeft } from 'lucide-react';
 import styles from '@styles/Placeholder.module.css';
 
-const YearlyTrend = () => {
+
+const YearlyTrend= () => {
   const [rawData, setRawData] = useState([]);
   const [kpiData, setKpiData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -89,8 +90,8 @@ const YearlyTrend = () => {
       {/* 1. 헤더 영역 */}
       <div className={styles.header} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <TrendingUp size={30} color="#8884d8" />
-          <h2 className={styles.label} style={{ fontSize: '20px', fontWeight: 'bold', color: '#000' }}>
+          <TrendingUp size={30} color="#3b82f6" />
+          <h2 className={styles.label} style={{ fontSize: '20px', fontWeight: 'bold', color: '#3b82f6' }}>
             {viewMode === 'yearly' ? "연도별 이용객 거시 추이" : `${targetYear}년 월별 상세 분석`}
           </h2>
           {viewMode === 'monthly' && (
@@ -107,7 +108,7 @@ const YearlyTrend = () => {
             <button 
               key={t} 
               onClick={() => setSelectedType(t)} 
-              style={{ padding: '8px 18px', backgroundColor: selectedType === t ? '#8884d8' : '#fff', color: selectedType === t ? '#fff' : '#666', border: '1px solid #ddd', borderRadius: '20px', cursor: 'pointer', marginLeft: '8px', fontWeight: '500' }}
+              style={{ padding: '8px 18px', backgroundColor: selectedType === t ? '#3b82f6' : '#fff', color: selectedType === t ? '#fff' : '#666', border: '1px solid #ddd', borderRadius: '20px', cursor: 'pointer', marginLeft: '8px', fontWeight: '500' }}
             >
               {t}
             </button>
@@ -207,4 +208,5 @@ const YearlyTrend = () => {
   );
 }
 
-export default YearlyTrend
+export default YearlyTrend;
+

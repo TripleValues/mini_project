@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {api} from '@utils/network.js';
 import { ResponsiveBar } from '@nivo/bar';
 import { BarChart2, Loader2, Award, Zap, Calendar, Search } from 'lucide-react';
@@ -79,32 +79,20 @@ const TopStations = () => {
     }));
   };
 
-  const selectStyle = {
-  padding: '8px 12px',
-  borderRadius: '8px',
-  border: '1px solid #052753',
-  fontSize: '14px',
-  backgroundColor: '#ffffff',
-  outline: 'none',
-  cursor: 'pointer',
-  transition: 'border-color 0.2s',
-  color : '#000000'
-};
-
   return (
     <div className={styles.page}>
       {/* 1. 필터 컨트롤러 영역 */}
       <div className={styles.header} style={{ marginBottom: '20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <BarChart2 size={28} color="#6366f1" />
+            <BarChart2 size={28} color="#3b82f6" />
             <h2 className={styles.label}>역별 혼잡도 TOP {appliedFilters.topN} 랭킹</h2>
           </div>
 
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center', background: '#fff', padding: '12px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)',color : '#000000' }}>
             {/* 날짜 선택 */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderRight: '1px solid #eee', paddingRight: '12px',color : '#000000' }}>
-              <Calendar size={18} color="#6366f1" />
+              <Calendar size={18} color="#3b82f6" />
               <select name="year" value={tempFilters.date.year} onChange={handleDateChange} style={selectStyle}>
                 {years.map(y => <option key={y} value={y}>{y}년</option>)}
               </select>
@@ -131,7 +119,7 @@ const TopStations = () => {
             <button 
               onClick={handleApply}
               style={{ 
-                display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#6366f1', color: '#fff', 
+                display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#3b82f6', color: '#fff', 
                 border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '600', cursor: 'pointer' 
               }}
             >
@@ -144,7 +132,7 @@ const TopStations = () => {
       {/* 2. KPI 카드 섹션 */}
       {kpi && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
-          <div style={{ padding: '20px', background: '#eef2ff', borderRadius: '12px', borderLeft: '5px solid #6366f1' }}>
+          <div style={{ padding: '20px', background: '#eef2ff', borderRadius: '12px', borderLeft: '5px solid #3b82f6' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#4338ca', marginBottom: '10px' }}>
               <Award size={20} /> <span style={{ fontWeight: '600' }}>최대 혼잡 역</span>
             </div>
@@ -216,4 +204,16 @@ const TopStations = () => {
   );
 }
 
-export default TopStations
+const selectStyle = {
+  padding: '8px 12px',
+  borderRadius: '8px',
+  border: '1px solid #052753',
+  fontSize: '14px',
+  backgroundColor: '#ffffff',
+  outline: 'none',
+  cursor: 'pointer',
+  transition: 'border-color 0.2s',
+  color : '#000000'
+};
+
+export default TopStations;
