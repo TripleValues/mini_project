@@ -7,7 +7,7 @@ const PAGE_META = {
   '/stations': { title: '역별 혼잡도 TOP N',        desc: '인프라 투자 및 안전 배치가 우선시되는 HOT SPOT' },
   '/hourly':   { title: '시간대별 승하차 패턴 분석', desc: '출퇴근 피크 타임 정의 · 주거/업무 지역 특성 분류' },
   '/behavior': { title: '호선별 요일 이용행태',      desc: '평일·주말 이동 목적 차이 · 노선 운영 효율화' },
-  '/seasonal': { title: '월별 성수기/비수기 지수',   desc: '계절·공휴일 영향 분석 · 연간 최대 이용 월 포착' },
+  '/seasonal': { title: '월별 성수기/비수기 지수',   desc: '성수기 및 비성수기에 대한 연간 최대 이용 월 포착' },
 };
 
 const Header = () => {
