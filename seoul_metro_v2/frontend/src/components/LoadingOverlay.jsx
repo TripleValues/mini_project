@@ -1,6 +1,6 @@
 import styles from '@styles/LoadingOverlay.module.css';
 
-export default function LoadingOverlay({ message = '데이터 로딩 중...' }) {
+const LoadingOverlay = ({ message = '데이터 로딩 중...' }) => {
   return (
     <div className={styles.overlay}>
       <div className={styles.spinner} />
@@ -8,3 +8,6 @@ export default function LoadingOverlay({ message = '데이터 로딩 중...' }) 
     </div>
   );
 }
+
+export default LoadingOverlay
+
