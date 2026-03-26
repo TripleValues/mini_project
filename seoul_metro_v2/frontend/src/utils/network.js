@@ -38,4 +38,8 @@ export const fetchLineCharacteristics = (year, onOff = '전체') =>
 export const fetchClickRanking = (year, line, dayName, mode = 'total', onOff = '전체') =>
   api.get('/Feat_04/metro_04_3', { params: { year, line, day_name: dayName, mode, on_off: onOff } });
 
+// ── FEAT-05: 성수기및비성수기별 이용 승객수 평균 패턴 ──────────────────────────────
+export const fetchSeasonality = ({ year1, year2, month, type }) =>
+  api.post('/Feat_05/metro_05_1', { year1, year2, month, type });
+
 export default api;
