@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import {api} from '@utils/network.js';
 import { ResponsiveBar } from '@nivo/bar';
 import { BarChart2, Loader2, Award, Zap, Calendar, Search } from 'lucide-react';
-import styles from '@styles/Placeholder.module.css';
+import styles from '@styles/TopStations.module.css';
 
 const TopStations = () => {
   const [chartData, setChartData] = useState([]);
@@ -88,11 +88,12 @@ const TopStations = () => {
       // 2. 좌우 여백을 이미지의 padding(24px)과 비슷하게 맞춥니다.
       paddingLeft: '24px',
       paddingRight: '24px',
+      paddingBottom: '0px',
+      
       
       // 3. 부모(main)가 이미 margin-left(60px)로 Nav와의 간격을 벌려주고 있으므로
       // 여기서는 추가적인 margin-left를 주지 않습니다.
       marginLeft: '0',
-      
       width: '100%',
       boxSizing: 'border-box'
     }}>

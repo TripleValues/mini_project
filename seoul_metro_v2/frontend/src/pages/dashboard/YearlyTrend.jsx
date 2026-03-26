@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { api } from '@utils/network.js';
 import { ResponsiveLine } from '@nivo/line';
 import { TrendingUp, Loader2, Users, Activity, Scale, ChevronLeft } from 'lucide-react';
-import styles from '@styles/Placeholder.module.css';
+import styles from '@styles/YearlyTrend.module.css';
 
 
 const YearlyTrend= () => {
@@ -90,8 +90,7 @@ const YearlyTrend= () => {
       // 1. 상단 헤더와의 간격을 위해 paddingTop만 유지하거나, 
       // 이미 main에서 padding-top(20px)이 잡혀있다면 상황에 맞춰 조절하세요.
       paddingTop: '30px', 
-      
-      // 2. 좌우 여백을 이미지의 padding(24px)과 비슷하게 맞춥니다.
+      paddingBottom: '0', 
       paddingLeft: '24px',
       paddingRight: '24px',
       
