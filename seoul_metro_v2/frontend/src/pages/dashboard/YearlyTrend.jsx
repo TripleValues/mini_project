@@ -86,7 +86,23 @@ const YearlyTrend= () => {
   }, [rawData, viewMode, targetYear, selectedType]);
 
   return (
-    <div className={styles.page} style={{ paddingTop: '80px', paddingLeft: '30px', paddingRight: '30px' }}>
+    <div className={styles.page} style={{ 
+      // 1. 상단 헤더와의 간격을 위해 paddingTop만 유지하거나, 
+      // 이미 main에서 padding-top(20px)이 잡혀있다면 상황에 맞춰 조절하세요.
+      paddingTop: '30px', 
+      
+      // 2. 좌우 여백을 이미지의 padding(24px)과 비슷하게 맞춥니다.
+      paddingLeft: '24px',
+      paddingRight: '24px',
+      
+      // 3. 부모(main)가 이미 margin-left(60px)로 Nav와의 간격을 벌려주고 있으므로
+      // 여기서는 추가적인 margin-left를 주지 않습니다.
+      marginLeft: '0',
+      
+      width: '100%',
+      boxSizing: 'border-box'
+    }}
+  >
       {/* 1. 헤더 영역 */}
       <div className={styles.header} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
