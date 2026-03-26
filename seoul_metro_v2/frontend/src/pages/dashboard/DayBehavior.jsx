@@ -25,14 +25,18 @@ const CHART_THEME = {
   },
 };
 
-const YEARS = ['2021','2020','2019','2018','2017','2016','2015'];
+const YEARS = []
+for (let i = 0; i < 14; i++) {
+  YEARS.push(String(2021 - i))
+}
+
 const ON_OFF = ['전체','승차','하차'];
 const MODES = [
   { value: 'total', label: '전체 이용객', Icon: TrendingUp },
   { value: 'night', label: '심야 급증',   Icon: Moon },
 ];
 
-export default function DayBehavior() {
+const DayBehavior = () => {
   const [year,    setYear]    = useState('2021');
   const [onOff,   setOnOff]   = useState('전체');
   const [heatData, setHeatData] = useState([]);
@@ -142,13 +146,6 @@ export default function DayBehavior() {
               <ResponsiveHeatMap
                 data={heatData}
                 theme={CHART_THEME}
-                /**
-                 * margin 수정 포인트
-                 * left  : 호선명(최대 "경의중앙선" 6자) + tickPadding 확보 → 100
-                 * bottom : 요일 레이블(-15°) + legend 텍스트 공간        → 70
-                 * right  : 여유                                           → 20
-                 * top    : 여유                                           → 20
-                 */
                 margin={{ top: 20, right: 20, bottom: 70, left: 100 }}
                 valueFormat=">-.2s"
                 axisTop={null}
@@ -158,14 +155,14 @@ export default function DayBehavior() {
                   tickPadding: 8,
                   tickRotation: -20,
                   legend: '요일',
-                  legendOffset: 58,        /* bottom margin(70) 이내로 설정 */
+                  legendOffset: 58, 
                   legendPosition: 'middle',
                 }}
                 axisLeft={{
                   tickSize: 4,
                   tickPadding: 10,
                   legend: '호선',
-                  legendOffset: -88,       /* -(left margin - 12) */
+                  legendOffset: -88,
                   legendPosition: 'middle',
                 }}
                 colors={{
@@ -270,3 +267,5 @@ export default function DayBehavior() {
     </div>
   );
 }
+
+export default DayBehavior

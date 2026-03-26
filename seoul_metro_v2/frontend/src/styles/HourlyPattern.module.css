@@ -138,7 +138,6 @@
   border-radius: var(--radius-lg);
   display: flex;
   flex-direction: column;
-  /* overflow: hidden 제거 → Nivo 축 레이블 잘림 방지 */
 }
 
 .cardHeader {
@@ -174,11 +173,11 @@
 
 /* ── Chart Area ── */
 /* padding 제거: Nivo SVG가 부모 크기 100%를 기준으로 margin을 계산함
-   padding이 있으면 실제 그릴 수 있는 면적이 줄어들어 레이블이 잘림 */
+   padding이 있으면 실제 그릴 수 있는 면적이 줄어들어 레이블이 잘리는 현상 발생 */
 .chartArea {
   position: relative;
   width: 100%;
-  height: 480px; /* 차트 높이는 여기서만 조정 */
+  height: 480px;
   padding: 0;
 }
 
