@@ -7,14 +7,14 @@
   gap: 24px;
   
   /* 사이드바 너비만큼 왼쪽 마진 확보 (프로젝트 설정에 따라 조절) */
-  margin-left: var(--nav-w, 0px); 
-  width: calc(100% - var(--nav-w, 0px));
+  /* margin-left: var(--nav-w, 0px); 
+  width: calc(100% - var(--nav-w, 0px)); */
   
-  min-height: 100vh;
-  padding: 80px 40px 40px 40px; 
+  min-height: calc(100vh - 115px);
+  /* padding: 80px 40px 40px 40px;  */
   box-sizing: border-box;
   
-  /* ✅ 어두운 네이비 배경색 유지 */
+  /* 어두운 네이비 배경색 유지 */
   background-color: #080c12 !important; 
   color: #e0e0e0;
   overflow-x: hidden;

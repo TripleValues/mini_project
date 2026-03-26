@@ -18,7 +18,7 @@ import traceback
 
 origins = [ settings.react_url, "http://localhost:5173" ]
 
-app = FastAPI(title="Seoul Metro API")
+app = FastAPI(root_path="/api", title="Seoul Metro API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -34,8 +34,8 @@ mariadb_engine = create_engine(settings.mariadb_url, connect_args={"local_infile
 @app.on_event("startup")
 def startup_event():
   global spark
-  os.environ["HADOOP_HOME"] = settings.hadoop_path
-  os.environ["PATH"] += os.pathsep + os.path.join(settings.hadoop_path, "bin")
+  # os.environ["HADOOP_HOME"] = settings.hadoop_path
+  # os.environ["PATH"] += os.pathsep + os.path.join(settings.hadoop_path, "bin")
   try:
     spark = SparkSession.builder \
       .appName("mySparkApp") \
@@ -75,7 +75,8 @@ def shutdown_event():
 
 def getDataFrame(file_path):
   try:
-    df = pd.read_csv(file_path, encoding="utf-8", header=0, thousands=',', quotechar='"', skipinitialspace=True)
+    full_path = os.path.join(file_path, "2008.csv")
+    df = pd.read_csv(full_path, encoding="utf-8", header=0, thousands=',', quotechar='"', skipinitialspace=True)
     df.columns = df.columns.str.strip()
     return df
   except Exception as e:

@@ -141,5 +141,7 @@ vite.config.ts.timestamp-*
 .ipynb_checkpoints
 .venv
 .env
+프론트.env
+백.env
 __pycache__
 authorized_keys

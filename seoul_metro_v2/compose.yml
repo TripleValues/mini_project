@@ -1,4 +1,59 @@
-services:  
+services:
+
+  web-main:
+    image: nginx:1.28
+    container_name: web-main
+    ports:
+      - 80:80
+    volumes:
+      - ./config:/etc/nginx/conf.d:ro
+      - ./main:/usr/share/nginx/html:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - spark-network
+
+  frontend:
+    image: nginx:1.28
+    container_name: frontend
+    volumes:
+      - ./frontend/config:/etc/nginx/conf.d:ro
+      - ./frontend/dist:/usr/share/nginx/html:ro
+    networks:
+      - spark-network
+
+  backend:
+    image: uv:backend
+    container_name: backend
+    volumes:
+      - ./backend/pyproject.toml:/workspace/pyproject.toml
+      - ./backend/uv.lock:/workspace/uv.lock
+      - ./backend/.python-version:/workspace/.python-version
+      - ./backend/main.py:/workspace/main.py
+      - ./backend/settings.py:/workspace/settings.py
+      - ./backend/pages:/workspace/pages
+      - ./backend/data:/workspace/data
+      - ./backend/mariadb-java-client-3.5.7.jar:/workspace/mariadb-java-client-3.5.7.jar
+    environment:
+      - API_KEY=4b7551556b6e6172393456434e4174
+      - MARIADB_HOST=mariadb
+      - MARIADB_USER=root
+      - MARIADB_PASSWORD=1234
+      - MARIADB_PORT=3306
+      - MARIADB_NAME=db_metro
+      - MARIADB_URL=mysql+pymysql://root:1234@mariadb:3306/db_metro
+      - MARIADB_DRIVER=/workspace/mariadb-java-client-3.5.7.jar
+      - SPARK_URL=spark://spark-master:7077
+      - HOST_IP=backend
+      - JDBC_URL=jdbc:mariadb://mariadb:3306/db_metro?sessionVariables=sql_mode='ANSI_QUOTES'
+      - FILE_DIR=/workspace/data/raw
+      - HADOOP_PATH=/workspace
+      - REACT_URL=http://aiedu.tplinkdns.com:7230
+    networks:
+      - spark-network
+    command: ["uv", "run", "fastapi", "run", "--proxy-headers", "--forwarded-allow-ips", "'*'"]
+
   mariadb:
     container_name: mariadb
     image: mariadb:12.1.2
@@ -10,7 +65,7 @@ services:
     networks:
       - spark-network
     volumes:
-      - ./conf.d:/etc/mysql/conf.d:ro
+      - ./mariadb/conf.d:/etc/mysql/conf.d:ro
       - data-mariadb:/var/lib/mysql:rw
     environment:
       - MARIADB_ROOT_PASSWORD=1234
@@ -19,8 +74,7 @@ services:
       - LC_ALL=en_US.UTF-8
 
   spark-master:
-    # image: apache/spark:4.1.1-java21-python3
-    image: my-spark:2026.03.23
+    image: my-spark:latest
     container_name: spark-master
     user: root
     environment:
@@ -34,20 +88,12 @@ services:
       - SPARK_RPC_ENCRYPTION_ENABLED=no
       - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
       - SPARK_SSL_ENABLED=no
-    volumes:
-      - ./data:/opt/spark/data:rw
-    ports:
-      - "8080:8080"
-      - "7077:7077"
-      - "10001:10001"
     networks:
       - spark-network
-    # command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
     command: start-master.sh
 
   spark-worker-1:
-    # image: apache/spark:4.1.1-java21-python3
-    image: my-spark:2026.03.23
+    image: my-spark:latest
     container_name: spark-worker-1
     user: root
     environment:
@@ -57,23 +103,17 @@ services:
       - SPARK_WORKER_MEMORY=2G
       - SPARK_WORKER_CORES=2
       - SPARK_RPC_AUTHENTICATION_ENABLED=no
-    ports:
-      - "8081:8081"
-      - "10002:10002"
-      - "11002:11002"
     volumes:
-      - spark-work-1:/opt/spark/work
-      - ./data:/opt/spark/data:rw
+      - spark_spark-work-1:/opt/spark/work
     depends_on:
       - spark-master
     networks:
       - spark-network
-    # command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
     command: start-worker.sh spark://spark-master:7077
 
   spark-worker-2:
     # image: apache/spark:4.1.1-java21-python3
-    image: my-spark:2026.03.23
+    image: my-spark:latest
     container_name: spark-worker-2
     user: root
     environment:
@@ -83,18 +123,12 @@ services:
       - SPARK_WORKER_MEMORY=2G
       - SPARK_WORKER_CORES=2
       - SPARK_RPC_AUTHENTICATION_ENABLED=no
-    ports:
-      - "8082:8081"
-      - "10003:10002"
-      - "11003:11002"
     volumes:
-      - spark-work-2:/opt/spark/work
-      - ./data:/opt/spark/data:rw
+      - spark_spark-work-2:/opt/spark/work
     depends_on:
       - spark-master
     networks:
       - spark-network
-    # command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
     command: start-worker.sh spark://spark-master:7077
 
 networks:
@@ -102,7 +136,9 @@ networks:
     driver: bridge
 
 volumes:
-  spark-work-1:
-  spark-work-2:
+  spark_spark-work-1:
+    external: true
+  spark_spark-work-2:
+    external: true
   data-mariadb:
     external: true # 기존 Volume 사용 옵션
