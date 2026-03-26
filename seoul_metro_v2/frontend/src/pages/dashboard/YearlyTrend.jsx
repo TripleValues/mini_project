@@ -206,11 +206,35 @@ const YearlyTrend= () => {
               }
             }}
             theme={{
+              // 1. 축의 숫자 및 텍스트 색상 변경
               axis: {
-                ticks: { text: { fill: '#8e8e93', fontSize: 12 } },
-                legend: { text: { fill: '#1c1c1e', fontWeight: 600, fontSize: 13 } }
+                ticks: { 
+                  text: { 
+                    fill: '#000000', // 축 숫자 색상을 검정으로
+                    fontSize: 12 
+                  } 
+                },
+                legend: { 
+                  text: { 
+                    fill: '#000000', // '이용객수', '월별 상세 데이터' 등 범례 색상
+                    fontWeight: 600, 
+                    fontSize: 13 
+                  } 
+                }
               },
-              grid: { line: { stroke: '#f2f2f7', strokeWidth: 1 } }
+              // 2. 마우스를 올렸을 때 나타나는 툴팁(Tooltip) 텍스트 색상 변경
+              tooltip: {
+                container: {
+                  color: '#000000', // 툴팁 내부 글자색
+                  background: '#ffffff',
+                }
+              },
+              grid: { 
+                line: { 
+                  stroke: '#f2f2f7', 
+                  strokeWidth: 1 
+                } 
+              }
             }}
           />
         ) : (
