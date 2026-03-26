@@ -87,8 +87,8 @@ def run_spark_feat01():
         df = spark.read.format("jdbc") \
             .option("url", jdbc_url) \
             .option("dbtable", raw_query) \
-            .option("user", settings.my_user) \
-            .option("password", settings.my_pwd) \
+            .option("user", settings.mariadb_user) \
+            .option("password", settings.mariadb_password) \
             .option("driver", "org.mariadb.jdbc.Driver") \
             .load()
 
@@ -122,8 +122,8 @@ def run_spark_feat01():
         pivot_df.write.format("jdbc") \
             .option("url", jdbc_url) \
             .option("dbtable", "feat_01") \
-            .option("user", settings.my_user) \
-            .option("password", settings.my_pwd) \
+            .option("user", settings.mariadb_user) \
+            .option("password", settings.mariadb_password) \
             .option("driver", "org.mariadb.jdbc.Driver") \
             .option("quoteIdentifiers", "false") \
             .mode("append") \
@@ -324,8 +324,8 @@ def get_metro_01_integrated_analysis(type: str = "전체", year: int = None):
         df = spark.read.format("jdbc") \
             .option("url", settings.jdbc_url) \
             .option("dbtable", "feat_01") \
-            .option("user", settings.my_user) \
-            .option("password", settings.my_pwd) \
+            .option("user", settings.mariadb_user) \
+            .option("password", settings.mariadb_password) \
             .option("driver", "org.mariadb.jdbc.Driver") \
             .load().cache()
 

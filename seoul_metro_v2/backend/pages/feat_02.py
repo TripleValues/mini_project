@@ -67,8 +67,8 @@ def feat_02_spark_processing():
 
         jdbc_url = settings.jdbc_url
         properties = {
-            "user": settings.my_user,
-            "password": settings.my_pwd,
+            "user": settings.mariadb_user,
+            "password": settings.mariadb_password,
             "driver": "org.mariadb.jdbc.Driver"
         }
 
@@ -141,8 +141,8 @@ def feat_02_spark_processing():
         ranked_df.write.format("jdbc") \
             .option("url", jdbc_url) \
             .option("dbtable", "feat_02") \
-            .option("user", settings.my_user) \
-            .option("password", settings.my_pwd) \
+            .option("user", settings.mariadb_user) \
+            .option("password", settings.mariadb_password) \
             .option("driver", "org.mariadb.jdbc.Driver") \
             .option("truncate", "true") \
             .mode("overwrite") \
@@ -268,8 +268,8 @@ def get_metro_02_chart_data(
         df = spark.read.format("jdbc") \
             .option("url", settings.jdbc_url) \
             .option("dbtable", "feat_02") \
-            .option("user", settings.my_user) \
-            .option("password", settings.my_pwd) \
+            .option("user", settings.mariadb_user) \
+            .option("password", settings.mariadb_password) \
             .option("driver", "org.mariadb.jdbc.Driver") \
             .load()
 
@@ -308,8 +308,8 @@ def get_metro_02_kpi_insights(
         df = spark.read.format("jdbc") \
             .option("url", settings.jdbc_url) \
             .option("dbtable", "feat_02") \
-            .option("user", settings.my_user) \
-            .option("password", settings.my_pwd) \
+            .option("user", settings.mariadb_user) \
+            .option("password", settings.mariadb_password) \
             .option("driver", "org.mariadb.jdbc.Driver") \
             .load()
 
