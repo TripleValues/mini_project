@@ -2,7 +2,9 @@ import { useEffect, useState, useCallback } from 'react';
 import {api} from '@utils/network.js';
 import { ResponsiveBar } from '@nivo/bar';
 import { BarChart2, Loader2, Award, Zap, Calendar, Search } from 'lucide-react';
+import LoadingOverlay from '@components/LoadingOverlay';
 import styles from '@styles/TopStations.module.css';
+import overlayStyles from '@styles/LoadingOverlay.module.css';
 
 const TopStations = () => {
   const [chartData, setChartData] = useState([]);
@@ -168,11 +170,10 @@ const TopStations = () => {
       )}
 
       {/* 3. 가로 막대 차트 영역 */}
-      <div style={{ height: '550px', background: '#fff', padding: '20px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
+      <div style={{ height: '550px', background: '#fff', padding: '20px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)',position: 'relative',overflow: 'hidden' }}>
         {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-            <Loader2 className="animate-spin" /> <span style={{marginLeft: '10px'}}>빅데이터 분석 중...</span>
-          </div>
+          // ✅ 기존 Loader2 <div>를 LoadingOverlay로 교체
+          <LoadingOverlay message="빅데이터 분석 중..." />
         ) : (
           <ResponsiveBar
             data={chartData}
