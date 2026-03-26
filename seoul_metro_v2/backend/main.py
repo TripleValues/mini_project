@@ -10,8 +10,7 @@ import pages.spark_service, \
   pages.feat_02, \
   pages.feat_03, \
   pages.feat_04, \
-  pages.feat_05, \
-  pages.feat_07
+  pages.feat_05
 import pandas as pd
 import os
 import traceback
@@ -19,6 +18,7 @@ import traceback
 origins = [ settings.react_url, "http://localhost:5173" ]
 
 app = FastAPI(root_path="/api", title="Seoul Metro API")
+# app = FastAPI(title="Seoul Metro API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -34,8 +34,8 @@ mariadb_engine = create_engine(settings.mariadb_url, connect_args={"local_infile
 @app.on_event("startup")
 def startup_event():
   global spark
-  # os.environ["HADOOP_HOME"] = settings.hadoop_path
-  # os.environ["PATH"] += os.pathsep + os.path.join(settings.hadoop_path, "bin")
+  os.environ["HADOOP_HOME"] = settings.hadoop_path
+  os.environ["PATH"] += os.pathsep + os.path.join(settings.hadoop_path, "bin")
   try:
     spark = SparkSession.builder \
       .appName("mySparkApp") \
@@ -167,8 +167,7 @@ apis = [
   pages.feat_02.router,
   pages.feat_03.router,
   pages.feat_04.router, 
-  pages.feat_05.router, 
-  pages.feat_07.router
+  pages.feat_05.router
 ]
 for router in apis:
   app.include_router(router)

@@ -1,11 +1,18 @@
-.page { display: flex; flex-direction: column; gap: 18px; }
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  height: 100%;       /* 부모(content)가 flex:1이므로 가용 공간 전부 사용 */
+  min-height: 0;      /* flex 자식의 overflow shrink 허용 */
+}
 
 /* ── Controls ── */
 .controls {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   flex-wrap: wrap;
+  flex-shrink: 0;     /* 차트 확장 시 컨트롤 바 높이 고정 */
 }
 
 .searchBox {
@@ -16,7 +23,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 0 12px;
-  min-width: 260px;
+  min-width: 220px;
   transition: border-color 0.18s;
 }
 .searchBox:focus-within { border-color: var(--accent); }
@@ -63,7 +70,7 @@
   border: none;
   color: var(--text-secondary);
   font-size: 12px;
-  padding: 5px 12px;
+  padding: 5px 10px;
   border-radius: 5px;
   transition: all 0.15s;
   font-family: 'Space Mono', monospace;
@@ -80,6 +87,7 @@
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 .goldenLabel {
@@ -100,7 +108,7 @@
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 8px 14px;
+  padding: 7px 14px;
   transition: border-color 0.15s;
 }
 .goldenCard:hover { border-color: var(--accent-orange); }
@@ -138,13 +146,15 @@
   border-radius: var(--radius-lg);
   display: flex;
   flex-direction: column;
+  flex: 1;            /* 남은 수직 공간을 모두 차지 */
+  min-height: 0;      /* flex 자식 overflow shrink 허용 */
 }
 
 .cardHeader {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 14px 20px;
+  padding: 12px 20px;
   border-bottom: 1px solid var(--border);
   color: var(--text-secondary);
   background: var(--bg-elevated);
@@ -172,13 +182,13 @@
 }
 
 /* ── Chart Area ── */
-/* padding 제거: Nivo SVG가 부모 크기 100%를 기준으로 margin을 계산함
-   padding이 있으면 실제 그릴 수 있는 면적이 줄어들어 레이블이 잘리는 현상 발생 */
 .chartArea {
   position: relative;
+  flex: 1;            /* cardHeader를 제외한 나머지 카드 높이를 모두 사용 */
+  min-height: 0;
   width: 100%;
-  height: 480px;
   padding: 0;
+  /* height 고정값 제거 → flex:1이 뷰포트에 맞게 동적으로 결정 */
 }
 
 .errorBox {
@@ -198,4 +208,15 @@
   color: var(--text-muted);
   font-size: 13px;
   height: 100%;
+}
+
+/* ── 반응형: 카드 헤더 텍스트 조정 ── */
+@media (max-width: 1000px) {
+  .cardNote { display: none; }     /* 좁으면 우측 주석 숨김 */
+  .filterBtn { padding: 5px 8px; font-size: 11px; }
+}
+
+@media (max-width: 768px) {
+  .searchBox { min-width: 160px; }
+  .cardTitle { font-size: 12px; }
 }
