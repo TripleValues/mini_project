@@ -1,8 +1,10 @@
 import { useEffect, useState, useMemo } from 'react';
 import { api } from '@utils/network.js';
 import { ResponsiveLine } from '@nivo/line';
-import { TrendingUp, Loader2, Users, Activity, Scale, ChevronLeft } from 'lucide-react';
+import { TrendingUp, Users, Activity, Scale, ChevronLeft } from 'lucide-react';
+import LoadingOverlay from '@components/LoadingOverlay';
 import styles from '@styles/YearlyTrend.module.css';
+
 
 
 const YearlyTrend= () => {
@@ -162,13 +164,11 @@ const YearlyTrend= () => {
       </div>
 
       {/* 3. 메인 차트 영역 */}
-      <div style={{ background: '#fff', padding: '32px', borderRadius: '20px', boxShadow: '0 10px 30px rgba(0,0,0,0.04)', height: '520px', position: 'relative' }}>
-        {loading ? (
-          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100%', gap: '12px' }}>
-            <Loader2 className="animate-spin" size={40} color="#5e5ce6" />
-            <span style={{ color: '#8e8e93', fontSize: '15px' }}>서버에서 데이터를 분석하고 있습니다...</span>
-          </div>
-        ) : chartData.length > 0 && chartData[0].data.length > 0 ? (
+      <div style={{ background: '#fff', padding: '32px', borderRadius: '20px', boxShadow: '0 10px 30px rgba(0,0,0,0.04)', height: '520px', position: 'relative', overflow: 'hidden' }}>
+          {loading ? (
+            // 중복되던 <span> 태그와 Loader2는 제거하고 깔끔하게 컴포넌트만 호출합니다.
+            <LoadingOverlay message="서버에서 데이터를 분석하고 있습니다..." />
+          ) : chartData.length > 0 && chartData[0].data.length > 0 ? (
           <ResponsiveLine
             data={chartData}
             margin={{ top: 20, right: 40, bottom: 80, left: 80 }}
@@ -189,6 +189,7 @@ const YearlyTrend= () => {
               tickSize: 0,
               tickPadding: 10
             }}
+            
             enableGridX={false}
             gridYValues={5}
             enableArea={true}
@@ -205,6 +206,31 @@ const YearlyTrend= () => {
                 setViewMode('monthly');
               }
             }}
+            tooltip={({ point }) => {
+                return (
+                  <div
+                    style={{
+                      background: 'white',
+                      padding: '9px 12px',
+                      border: '1px solid #ccc',
+                      borderRadius: '4px',
+                      boxShadow: '0 3px 6px rgba(0,0,0,0.1)',
+                      color: '#333',
+                      fontSize: '13px',
+                      transform: 'translateY(50px)', 
+                      position: 'relative',
+                      zIndex: 999
+                    }}
+                  >
+                    <div style={{ marginBottom: '4px' }}>
+                      <strong>📅 {viewMode === 'yearly' ? '년도' : '월'}:</strong> {point.data.x}
+                    </div>
+                    <div style={{ color: point.serieColor, fontWeight: 'bold' }}>
+                      <strong>👥 인원수:</strong> {Number(point.data.y).toLocaleString()}명
+                    </div>
+                  </div>
+                );
+              }}
             theme={{
               // 1. 축의 숫자 및 텍스트 색상 변경
               axis: {
