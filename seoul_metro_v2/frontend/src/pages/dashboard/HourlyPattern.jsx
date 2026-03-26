@@ -10,7 +10,7 @@ const TIME_ORDER = [
   '05~06','06~07','07~08','08~09','09~10','10~11',
   '11~12','12~13','13~14','14~15','15~16','16~17',
   '17~18','18~19','19~20','20~21','21~22','22~23','23~24','24~',
-];
+]
 
 /**
  * Nivo Line의 data 배열을 TIME_ORDER 기준으로 정렬
@@ -48,10 +48,13 @@ const CHART_THEME = {
 };
 
 // 2021 → 2008
-const YEARS = Array.from({ length: 14 }, (_, i) => String(2021 - i));
+const YEARS = []
+for (let i = 0; i < 14; i++) {
+  YEARS.push(String(2021 - i))
+}
 
 // ──────────────────────────────────────────────────────────────
-export default function HourlyPattern() {
+const HourlyPattern = () => {
   const [year,       setYear]       = useState('2021');
   const [station,    setStation]    = useState('강남');
   const [inputVal,   setInputVal]   = useState('강남');
@@ -71,29 +74,11 @@ export default function HourlyPattern() {
         fetchGoldenTime(year, station, dayType),
       ]);
 
-      // ── metro_03_1 응답 구조 ────────────────────────────────
-      // {
-      //   status: true,
-      //   result: [
-      //     {
-      //       id: "승차",                         ← Nivo id
-      //       station_code: "150",
-      //       data: [
-      //         { x: "05~06", y: 123.45, 혼잡도지수: 80.2 },
-      //         ...
-      //       ]
-      //     },
-      //     { id: "하차", data: [...] }
-      //   ]
-      // }
-      //
-      // → result 배열이 이미 Nivo Line 형식이므로 정렬만 수행
-      // ────────────────────────────────────────────────────────
       const raw = patternRes?.result ?? [];
 
       const formatted = raw.map(line => ({
-        id: line.id,                         // "승차" | "하차"
-        data: sortByTime(line.data ?? []),   // TIME_ORDER 기준 정렬
+        id: line.id,                        
+        data: sortByTime(line.data ?? []),
       }));
 
       setChartData(formatted);
@@ -208,13 +193,6 @@ export default function HourlyPattern() {
             <ResponsiveLine
               data={chartData}
               theme={CHART_THEME}
-              /**
-               * margin 수정 포인트
-               * left   : Y축 레이블 + 숫자(최대 "999k") 공간 확보 → 90
-               * bottom : X축 눈금 -45° 회전 + legend 공간         → 80
-               * right  : legend(anchor=right) 공간                 → 130
-               * top    : 여유                                       → 24
-               */
               margin={{ top: 24, right: 130, bottom: 80, left: 90 }}
               xScale={{ type: 'point' }}
               yScale={{ type: 'linear', min: 'auto', max: 'auto', stacked: false }}
@@ -224,14 +202,14 @@ export default function HourlyPattern() {
                 tickPadding: 6,
                 tickRotation: -45,
                 legend: '시간대',
-                legendOffset: 68,          /* bottom(80) - 여유(12) */
+                legendOffset: 68,
                 legendPosition: 'middle',
               }}
               axisLeft={{
                 tickSize: 5,
                 tickPadding: 10,
                 legend: '평균 인원 (명)',
-                legendOffset: -78,         /* -(left - 12) */
+                legendOffset: -78, 
                 legendPosition: 'middle',
                 format: v =>
                   v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M`
@@ -285,3 +263,5 @@ export default function HourlyPattern() {
     </div>
   );
 }
+
+export default HourlyPattern
