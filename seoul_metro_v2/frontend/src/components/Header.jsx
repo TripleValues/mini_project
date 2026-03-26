@@ -10,7 +10,7 @@ const PAGE_META = {
   '/seasonal': { title: '월별 성수기/비수기 지수',   desc: '계절·공휴일 영향 분석 · 연간 최대 이용 월 포착' },
 };
 
-export default function Header() {
+const Header = () => {
   const { pathname } = useLocation();
   const meta = PAGE_META[pathname] || { title: 'Seoul Metro Analytics', desc: '서울시 지하철 승하차 데이터 시각화 대시보드' };
 
@@ -33,3 +33,5 @@ export default function Header() {
     </header>
   );
 }
+
+export default Header

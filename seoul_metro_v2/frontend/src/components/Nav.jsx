@@ -12,7 +12,7 @@ const MENU = [
   { path: '/seasonal', label: '월별 성수기 분석',   sub: 'METRO-05', Icon: Calendar    },
 ];
 
-export default function Nav() {
+const Nav = () => {
   return (
     <nav className={styles.nav}>
       <div className={styles.logo}>
@@ -52,3 +52,4 @@ export default function Nav() {
     </nav>
   );
 }
+export default Nav

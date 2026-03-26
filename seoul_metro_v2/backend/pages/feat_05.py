@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 from settings import settings
+from pydantic import BaseModel
 import time
 import logging
 
@@ -7,7 +8,10 @@ router = APIRouter(prefix="/Feat_05", tags=["Feat_05"])
 
 logger = logging.getLogger("uvicorn")
 
+# ==================================================================
+# DB LOAD
 # mariadb 데이터 가저오기 위한 spark 읽기 부분
+# ==================================================================
 def get_mariadb_df(spark, query: str):
   return spark.read.format("jdbc") \
     .option("url", f"{settings.jdbc_url}") \
@@ -18,142 +22,139 @@ def get_mariadb_df(spark, query: str):
     .load()
 
 
-# =================================================================
-# 특정대상연도와 특정비교연도의 월별 이용객 증감률 DATA를 가져오기 위한 부분
-# gr => Growth Rate
-# =================================================================
-def get_gr_data(spark, year1:int, year2:int): 
-  query = f"""
-    SELECT
-      cur.`월별`, cur.`역명`, cur.`구분타입`,
-      total.`총 평균 승차 인원`, total.`총 평균 하차 인원`,
-      cur.`총 이용객 수` AS `월별 이용객 수`,
-      IFNULL(
-        (cur.`총 이용객 수` - IFNULL(prev.`총 이용객 수`,0)) 
-        / NULLIF(prev.`총 이용객 수`,0) * 100
-      ,0) AS `총 이용객 증감률`
-    FROM (
-      -- 대상연도 (역별 + 성수기/비성수기)
-      SELECT
-        MONTH(`날짜`) AS `월별`, `역명`,
-        `성수기구분` AS `구분타입`,
-        SUM(`총 이용객 수`) AS `총 이용객 수`
-      FROM feat_05
-      WHERE YEAR(`날짜`) = {year1}
-      GROUP BY MONTH(`날짜`), `역명`, `성수기구분`
-      UNION ALL
-      -- 대상연도 전체 (역별)
-      SELECT
-        MONTH(`날짜`) AS `월별`, `역명`,
-        '전체' AS `구분타입`,
-        SUM(`총 이용객 수`) AS `총 이용객 수`
-      FROM feat_05
-      WHERE YEAR(`날짜`) = {year1}
-      GROUP BY MONTH(`날짜`), `역명`
-    ) cur
-    LEFT JOIN (
-      -- 비교연도 동일 구조
-      SELECT
-        MONTH(`날짜`) AS `월별`, `역명`,
-        `성수기구분` AS `구분타입`,
-        SUM(`총 이용객 수`) AS `총 이용객 수`
-      FROM feat_05
-      WHERE YEAR(`날짜`) = {year2}
-      GROUP BY MONTH(`날짜`), `역명`, `성수기구분`
-      UNION ALL
-      SELECT
-        MONTH(`날짜`) AS `월별`, `역명`,
-        '전체' AS `구분타입`,
-        SUM(`총 이용객 수`) AS `총 이용객 수`
-      FROM feat_05
-      WHERE YEAR(`날짜`) = {year2}
-      GROUP BY MONTH(`날짜`), `역명`
-    ) prev
-    ON cur.`월별` = prev.`월별`
-    AND cur.`역명` = prev.`역명`
-    AND cur.`구분타입` = prev.`구분타입`
-    CROSS JOIN (
-      -- 전체 평균 (참고용 KPI)
-      SELECT
-        ROUND(
-          SUM(CASE WHEN `구분`='승차' THEN `총 이용객 수` END) /
-          NULLIF(COUNT(CASE WHEN `구분`='승차' THEN 1 END),0)
-        ,2) AS `총 평균 승차 인원`,
-        ROUND(
-          SUM(CASE WHEN `구분`='하차' THEN `총 이용객 수` END) /
-          NULLIF(COUNT(CASE WHEN `구분`='하차' THEN 1 END),0)
-        ,2) AS `총 평균 하차 인원`
-      FROM feat_05
-      WHERE YEAR(`날짜`) = {year1}
-    ) total
-
-    ORDER BY cur.`역명`, cur.`월별`,
-      FIELD(cur.`구분타입`, '전체', '성수기', '비성수기');
-  """
-  
-  outputData = get_mariadb_df(spark, query)
-  
-  return outputData
+# ===================================
+# REQUEST MODEL
+# ===================================
+class SeasonalityRequest(BaseModel):
+    year1: int
+    year2: int
+    month: int | None = None
+    type: str = "전체"
 
 
 # ============================================================
 # feat-05 특정연도와 특정연도의 월별 총 이용객 증감률 데이터 가져오기
 # ============================================================
 
-@router.post("/metro_05_01")
-async def get_gr_metro_data(year1:int, year2:int):
+@router.post("/metro_05_1")
+async def get_gr_metro_data(req: SeasonalityRequest):
   from main import spark
 
   if spark is None:
-    return {
-      "status": False, 
-      "error": "Spark session is not initialized. Please wait for startup."
-    }
-  
+    return {"status": False, "error": "Spark session not initialized"}
+
   try:
-    # 데이터 가져와서 return값으로 보내주기 위해 스타트하는 시간
-    st_fl = time.time()
+    year1 = req.year1
+    year2 = req.year2
+    month = req.month
+    type_ = req.type
 
-    logger.info("[DB DATA 조회 시작]")
+    logger.info("[DB 조회 시작]")
 
-    # 실제 실행 (Spark Action)
-    df = get_gr_data(spark, year1, year2).cache()
-    # 가져온 데이터를 return값으로 보내주기 위해 스타트하는 시간
-    st_tl = time.time()
-    # result = df.toJSON().collect()
-    result = df.toPandas().to_dict(orient="records")
-    # 데이터 가져오는 시간 체크
-    get_data_time(st_fl, st_tl, result)
-    
-    logger.info("[DB DATA 조회 완료]")
+    # 🔥 공통 필터
+    type_filter = f"AND 성수기구분 = '{type_}'" if type_ != "전체" else ""
 
-    return { "status": True, "data": result }
+    # ---------------------------------------------------------------------
+    # 1. 월별 (month 없음)
+    # ---------------------------------------------------------------------
+    if month is None:
 
-  # Spark / JDBC / DB 에러
+      query = f"""
+        SELECT
+          `월별`,
+          SUM(`총 이용객 수`) AS `총 이용객 수`
+        FROM feat_05
+        WHERE `연도` = {year1}
+        {type_filter}
+        GROUP BY `월별`
+      """
+
+      df = get_mariadb_df(spark, query)
+      data = df.toPandas().to_dict(orient="records")
+
+      # 증감률 계산 (Python에서)
+      prev_query = f"""
+        SELECT
+          `월별`,
+          SUM(`총 이용객 수`) AS `총 이용객 수`
+        FROM feat_05
+        WHERE `연도` = {year2}
+        {type_filter}
+        GROUP BY `월별`
+      """
+
+      prev_df = get_mariadb_df(spark, prev_query)
+      prev_data = {d["월별"]: d["총 이용객 수"] for d in prev_df.toPandas().to_dict(orient="records")}
+
+      result = []
+      for d in data:
+        m = d["월별"]
+        cur_val = d["총 이용객 수"]
+        prev_val = prev_data.get(m, 0)
+
+        growth = 0
+        if prev_val != 0:
+          growth = (cur_val - prev_val) / prev_val * 100
+
+        result.append({
+          "월별": m,
+          "총_이용객_증감률": round(growth, 2)
+        })
+
+      return {"status": True, "monthly": result}
+
+
+    # ---------------------------------------------------------------------
+    # 2. 역별 (month 있음)
+    # ---------------------------------------------------------------------
+    else:
+
+      query = f"""
+        SELECT
+          `역명`,
+          SUM(`총 이용객 수`) AS `총 이용객 수`
+        FROM feat_05
+        WHERE `연도` = {year1}
+        AND `월별` = {month}
+        {type_filter}
+        GROUP BY `역명`
+      """
+
+      df = get_mariadb_df(spark, query)
+      data = df.toPandas().to_dict(orient="records")
+
+      prev_query = f"""
+        SELECT
+          `역명`,
+          SUM(`총 이용객 수`) AS `총 이용객 수`
+        FROM feat_05
+        WHERE `연도` = {year2}
+        AND `월별` = {month}
+        {type_filter}
+        GROUP BY `역명`
+      """
+
+      prev_df = get_mariadb_df(spark, prev_query)
+      prev_data = {d["역명"]: d["총 이용객 수"] for d in prev_df.toPandas().to_dict(orient="records")}
+
+      result = []
+      for d in data:
+        name = d["역명"]
+        cur_val = d["총 이용객 수"]
+        prev_val = prev_data.get(name, 0)
+
+        growth = 0
+        if prev_val != 0:
+          growth = (cur_val - prev_val) / prev_val * 100
+
+        result.append({
+          "역명": name,
+          "총_이용객_증감률": round(growth, 2)
+        })
+
+      return {"status": True, "stations": result}
+
+
   except Exception as e:
-    error_msg = str(e)
-
-    logger.error("ERROR 발생")
-    logger.error(error_msg)
-
-    return { "status": False, "error": error_msg }
-
-  
-
-
-# ================================================
-# 데이터 가져오는 시간 체크
-# ================================================
-
-def get_data_time(st_fl, st_tl, result):
-  
-  total_time = time.time() - st_tl
-  full_time = time.time() - st_fl
-
-  logger.info("="*50)
-  logger.info(f"[TOTAL TIME] : {total_time:.3f}")
-  logger.info(f"[FULL TIME]  : {full_time:.3f}")
-  logger.info(f"[DATA COUNT] : {len(result)}")
-  logger.info("="*50)
-  # logger.info(f"[DATA] : {result}")
-  # logger.info("="*50)
+    logger.error(str(e))
+    return {"status": False, "error": str(e)}
