@@ -41,21 +41,33 @@ const YearlyTrend= () => {
     if (!kpiData || !kpiData.kpi_growth || kpiData.kpi_growth.length === 0) {
       return { total: 0, growth: 0, balance: 0 };
     }
-    const target = viewMode === 'monthly'
-      ? kpiData.kpi_growth.filter(d => d.년도 === parseInt(targetYear))
-      : [kpiData.kpi_growth[kpiData.kpi_growth.length - 1]];
 
-    const balanceTarget = viewMode === 'monthly'
+    // 1. 대상 데이터 필터링
+    const isMonthly = viewMode === 'monthly';
+    const target = isMonthly
+      ? kpiData.kpi_growth.filter(d => d.년도 === parseInt(targetYear))
+      : kpiData.kpi_growth;
+
+    const balanceTarget = isMonthly
       ? kpiData.kpi_balance.filter(d => d.년도 === parseInt(targetYear))
-      : [kpiData.kpi_balance[0]];
+      : kpiData.kpi_balance;
+
+    // 2. 성장률 계산 (요구사항 반영)
+    // - 첫 접속(yearly) 시: '-' 표시
+    // - 클릭 시(monthly): 해당 연도의 성장률 표시
+    const displayGrowth = isMonthly 
+      ? (target[0]?.growth_rate ?? 0) 
+      : '-';
 
     return {
       total: target.reduce((sum, d) => sum + (Number(d.total) || 0), 0),
-      growth: target[target.length - 1]?.growth_rate || 0,
-      balance: balanceTarget[0]?.balance_ratio || 0
+      growth: displayGrowth,
+      balance: isMonthly
+        ? (balanceTarget[0]?.balance_ratio || 0)
+        : (balanceTarget.reduce((sum, d) => sum + (Number(d.balance_ratio) || 0), 0) / balanceTarget.length).toFixed(1)
     };
   }, [kpiData, viewMode, targetYear]);
-
+  
   // ⭐ 그래프가 안 나오는 문제를 해결하기 위한 핵심 로직 (y값 숫자 변환)
   const chartData = useMemo(() => {
     if (!rawData || rawData.length === 0) return [];
@@ -137,7 +149,7 @@ const YearlyTrend= () => {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '30px' }}>
         <div style={{ padding: '24px', background: '#fff', borderRadius: '12px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', borderLeft: '6px solid #8884d8' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#666', fontSize: '14px', marginBottom: '10px' }}>
-            <Users size={18} /> 연간 총 이용객
+            <Users size={18} /> 총 이용객
           </div>
           <div style={{ fontSize: '26px', fontWeight: 'bold', color:'#000' }}>
             {currentKPI.total.toLocaleString()} <span style={{fontSize: '15px', fontWeight: 'normal'}}>명</span>
@@ -148,8 +160,14 @@ const YearlyTrend= () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#666', fontSize: '14px', marginBottom: '10px' }}>
             <Activity size={18} /> 전년 대비 성장률
           </div>
-          <div style={{ fontSize: '26px', fontWeight: 'bold', color: currentKPI.growth >= 0 ? '#ef4444' : '#3b82f6' }}>
-            {currentKPI.growth}%
+          <div style={{ 
+            fontSize: '26px', 
+            fontWeight: 'bold', 
+            // 성장률이 '-' 이면 검정색, 숫자면 양수/음수에 따라 빨강/파랑
+            color: currentKPI.growth === '-' ? '#000' : (currentKPI.growth >= 0 ? '#ef4444' : '#3b82f6') 
+          }}>
+            {/* '-' 일 때는 %를 붙이지 않고 그대로 출력 */}
+            {currentKPI.growth}{currentKPI.growth !== '-' ? '%' : ''}
           </div>
         </div>
 

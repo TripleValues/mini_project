@@ -16,7 +16,7 @@ const App = () => {
         <Header />
         <main className={styles.content}>
           <Routes>
-            <Route path="/"         element={<Navigate to="/behavior" replace />} />
+            <Route path="/"         element={<Navigate to="/yearly" replace />} />
             <Route path="/yearly"   element={<YearlyTrend />} />
             <Route path="/stations" element={<TopStations />} />
             <Route path="/hourly"   element={<HourlyPattern />} />
