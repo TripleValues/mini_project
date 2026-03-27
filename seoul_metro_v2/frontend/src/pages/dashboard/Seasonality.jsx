@@ -182,7 +182,7 @@ const Seasonality = () => {
                 <div className={styles.customTooltip}>
                   <div className={styles.tooltipTitle}>{data.월} 이용 현황</div>
                   <div>이용객: <strong>{data.total.toLocaleString()}명</strong></div>
-                  <div>전년 대비 증감률: <strong className={data.growth_rate > 0 ? styles.growthPositive : styles.growthNegative}>
+                  <div>비교연도 대비 증감률: <strong className={data.growth_rate > 0 ? styles.growthPositive : styles.growthNegative}>
                     {data.growth_rate}%
                   </strong></div>
                   <div style={{ marginTop: '5px', fontSize: '10px', color: '#888' }}>(클릭 시 역별 상세 보기)</div>
