@@ -34,8 +34,8 @@ mariadb_engine = create_engine(settings.mariadb_url, connect_args={"local_infile
 @app.on_event("startup")
 def startup_event():
   global spark
-  os.environ["HADOOP_HOME"] = settings.hadoop_path
-  os.environ["PATH"] += os.pathsep + os.path.join(settings.hadoop_path, "bin")
+  # os.environ["HADOOP_HOME"] = settings.hadoop_path
+  # os.environ["PATH"] += os.pathsep + os.path.join(settings.hadoop_path, "bin")
   try:
     spark = SparkSession.builder \
       .appName("mySparkApp") \

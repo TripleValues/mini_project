@@ -1,3 +1,8 @@
+-- DB 생성
+CREATE DATABASE db_metro
+DEFAULT CHARACTER SET utf8mb4
+COLLATE utf8mb4_uca1400_ai_ci;
+
 -- 계정 생성
 USE db_metro;
 
